@@ -1,0 +1,57 @@
+================================================================================
+  ANÁLISIS GAS NATURAL VS BIOMASA — APLICACIÓN PORTÁTIL ENESA
+  Preparado por: Erik Flandes Medina
+================================================================================
+
+¡Bienvenido! Esta carpeta contiene la aplicación web autónoma y portable
+para la evaluación técnico-económica de calderas industriales de Enesa.
+
+--------------------------------------------------------------------------------
+1. CONTENIDO DE LA CARPETA PORTÁTIL
+--------------------------------------------------------------------------------
+- index.html / evaluador_termico.html : Aplicación Web Interactiva autónoma.
+- enesa_logo.png                      : Logo oficial de Enesa para informes.
+- informe_ejecutivo_enesa.md          : Informe Ejecutivo en formato Markdown.
+- escenario_actual_enesa.json         : Respaldo en JSON con los datos ingresados.
+- LEAME_INSTRUCCIONES.txt             : Este archivo de instrucciones.
+
+--------------------------------------------------------------------------------
+2. CÓMO USAR Y TRASLADAR LA APLICACIÓN
+--------------------------------------------------------------------------------
+- Abrir la aplicación: Haz doble clic sobre "index.html" o "evaluador_termico.html".
+  Se abrirá en cualquier navegador (Google Chrome, Microsoft Edge, Firefox).
+  No requiere servidor web, internet ni instalación de programas.
+
+- Trasladar o compartir: Puedes copiar o comprimir (ZIP) toda esta carpeta
+  "Evaluador_Termico_Enesa" y moverla a un pendrive USB, enviarla por correo
+  electrónico o compartirla en red local con cualquier colega.
+
+--------------------------------------------------------------------------------
+3. PERSISTENCIA DE DATOS (CÓMO NO PERDER LOS DATOS INGRESADOS)
+--------------------------------------------------------------------------------
+La aplicación cuenta con DOS mecanismos de seguridad para proteger tus datos:
+
+A) Guardado Automático Local:
+   Cada cambio que realizas en los campos de entrada se guarda automáticamente
+   en la memoria de tu navegador (localStorage). Si cierras la página o presionas
+   Ctrl + F5, la aplicación recordará exactamente tus últimos valores.
+
+B) Respaldar / Cargar Escenarios (100% Portable entre computadores):
+   - Para guardar tus datos en un archivo: Haz clic en el botón verde
+     "Guardar Escenario" en la parte superior derecha de la web. Se descargará
+     un archivo .json con la fecha y hora.
+   - Para cargar tus datos en otra computadora: Abre la web en el equipo nuevo,
+     haz clic en "Cargar Escenario", selecciona el archivo .json guardado y todos
+     los valores se restaurarán instantáneamente.
+
+--------------------------------------------------------------------------------
+4. IMPRESIÓN Y EXPORTACIÓN A PDF
+--------------------------------------------------------------------------------
+- Haz clic en el botón "Imprimir / PDF" o presiona Ctrl + P.
+- El sistema formateará automáticamente el documento en una sola hoja A4 limpia
+  que incluye la portada de Enesa, la matriz comparativa, la recomendación y
+  los gráficos de sensibilidad alineados side-by-side.
+
+--------------------------------------------------------------------------------
+Contacto y Soporte: Enesa — Evaluación de Proyectos Térmicos
+================================================================================

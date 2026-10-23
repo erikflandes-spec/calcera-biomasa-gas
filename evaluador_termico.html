@@ -1,0 +1,1914 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Análisis Gas Natural vs Biomasa — Enesa</title>
+    <!-- Tailwind CSS (GStatic Allowlisted CDN) -->
+    <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
+    <style>
+        .card-surface {
+            background-color: var(--card, #ffffff);
+            color: var(--foreground, #1f2937);
+            border-color: var(--border, #e5e7eb);
+        }
+        .bg-custom-bg {
+            background-color: var(--background, #f9fafb);
+        }
+        .input-style {
+            background-color: var(--background, #ffffff);
+            color: var(--foreground, #111827);
+            border-color: var(--border, #d1d5db);
+        }
+        .input-style:focus {
+            outline: 2px solid var(--primary, #3b82f6);
+            border-color: transparent;
+        }
+        /* Yellow highlighting for calculated fields matching Excel */
+        .yellow-calc {
+            background-color: #fef08a !important; /* Tailwind yellow-200 */
+            color: #854d0e !important; /* Tailwind yellow-900 */
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.15s ease-in-out;
+        }
+        .yellow-calc:hover {
+            filter: brightness(0.93);
+            transform: scale(1.002);
+        }
+        .dark .yellow-calc {
+            background-color: #713f12 !important; /* Dark mode yellow-900 */
+            color: #fef08a !important; /* Dark mode yellow-200 */
+        }
+        .dark .yellow-calc:hover {
+            filter: brightness(1.15);
+        }
+
+        /* EXACT STYLES FOR PDF PRINTING: FITS ENTIRE REPORT + CHARTS ON 1 A4 PAGE */
+        @media print {
+            body {
+                background: #ffffff !important;
+                color: #000000 !important;
+                padding: 0 !important;
+                margin: 0 !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+            
+            /* Hide all interactive dashboard blocks, headers, buttons, prompt boxes */
+            body > div > *:not(#informe-ejecutivo-section) {
+                display: none !important;
+            }
+
+            .no-print, #formula-modal, button, .animate-pulse, input[type="checkbox"], label {
+                display: none !important;
+            }
+
+            #informe-ejecutivo-section {
+                display: block !important;
+                width: 100% !important;
+                max-width: 100% !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                border: none !important;
+                box-shadow: none !important;
+                background: #ffffff !important;
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
+            }
+
+            #informe-ejecutivo-section > * + * {
+                margin-top: 0.45rem !important;
+            }
+
+            #informe-ejecutivo-section * {
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+
+            #report-chart-biomass svg, #report-chart-gas svg {
+                max-height: 145px !important;
+                width: 100% !important;
+            }
+
+            @page {
+                margin: 0.45cm 0.7cm;
+                size: A4 portrait;
+            }
+        }
+    </style>
+</head>
+<body class="bg-custom-bg text-[var(--foreground)] antialiased min-h-screen p-3 md:p-6">
+    <div class="max-w-7xl mx-auto space-y-6">
+
+        <!-- HEADER CON LOGO DE ENESA Y TÍTULO SOLICITADO -->
+        <header class="card-surface p-5 md:p-6 rounded-2xl border shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div class="flex items-center gap-4">
+                <img src="enesa_logo.png" alt="Enesa Logo" class="h-12 w-auto object-contain" />
+                <div class="border-l pl-4 border-gray-200 dark:border-gray-700">
+                    <div class="flex items-center gap-2">
+                        <span class="text-xs font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400">Enesa</span>
+                        <span class="text-[10px] px-2 py-0.5 rounded bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-300 font-semibold">Evaluación de Proyectos Térmicos</span>
+                    </div>
+                    <h1 class="text-xl md:text-2xl font-black tracking-tight text-gray-900 dark:text-white">Análisis Gas Natural vs Biomasa</h1>
+                    <p class="text-xs text-[var(--muted-foreground)]">Evaluador Técnico-Económico de Calderas Industriales y Sensibilidad de Costos</p>
+                </div>
+            </div>
+
+            <div class="flex flex-wrap items-center gap-2 w-full md:w-auto justify-end no-print">
+                <button onclick="exportScenarioJSON()" title="Descargar archivo .json con tus datos ingresados" class="text-xs px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow transition font-bold flex items-center gap-1.5">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path></svg>
+                    <span>Guardar Escenario</span>
+                </button>
+                <label title="Subir un archivo .json para cargar tus datos guardados" class="text-xs px-3 py-2 bg-slate-700 hover:bg-slate-800 text-white rounded-xl shadow transition font-bold flex items-center gap-1.5 cursor-pointer">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                    <span>Cargar Escenario</span>
+                    <input type="file" accept=".json" onchange="importScenarioJSON(event)" class="hidden">
+                </label>
+                <button onclick="printReport()" class="text-xs px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow transition font-bold flex items-center gap-1.5">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
+                    <span>Imprimir / PDF</span>
+                </button>
+                <button onclick="resetDefaults()" class="text-xs px-2.5 py-2 border rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition font-medium">
+                    Restablecer
+                </button>
+            </div>
+        </header>
+
+        <!-- SECCIÓN 0: PARÁMETROS COMUNES COMPARTIDOS -->
+        <div class="card-surface p-5 rounded-2xl border shadow-sm space-y-3 bg-gradient-to-r from-blue-50/50 via-white to-emerald-50/50 dark:from-blue-950/20 dark:via-gray-900 dark:to-emerald-950/20">
+            <h2 class="text-sm font-bold uppercase tracking-wide flex items-center gap-2 text-indigo-700 dark:text-indigo-400">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path></svg>
+                Variables de Entrada Comunes para Ambas Calderas
+            </h2>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 pt-1">
+                <div>
+                    <label class="block text-xs font-semibold mb-1">Tasa de cambio ($/US$)</label>
+                    <input type="number" id="tasaCambio" value="950" oninput="calculate()" class="w-full p-2 text-sm rounded-lg border input-style font-bold text-indigo-600" />
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold mb-1">Generación vapor (ton/h)</label>
+                    <input type="number" id="generacionVapor" value="20" step="1" oninput="calculate()" class="w-full p-2 text-sm rounded-lg border input-style font-bold text-red-600" />
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold mb-1">Horas operación (h/año)</label>
+                    <input type="number" id="horasOperacion" value="8640" step="100" oninput="calculate()" class="w-full p-2 text-sm rounded-lg border input-style font-bold text-red-600" />
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold mb-1">Temp. agua alimentación (°C)</label>
+                    <input type="number" id="tempAguaAlim" value="110" oninput="calculate()" class="w-full p-2 text-sm rounded-lg border input-style font-medium" />
+                </div>
+            </div>
+        </div>
+
+        <!-- TOP KPI SUMMARY -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div id="kpi-best-option" class="card-surface p-4 rounded-2xl border shadow-sm">
+                <div class="text-[11px] font-semibold text-[var(--muted-foreground)] uppercase tracking-wider">Matriz Óptima Enesa</div>
+                <div id="kpi-winner-name" class="text-xl font-extrabold mt-1 text-blue-600 dark:text-blue-400">-</div>
+                <div id="kpi-winner-diff" class="text-xs font-medium mt-1 text-[var(--muted-foreground)]">-</div>
+            </div>
+
+            <div class="card-surface p-4 rounded-2xl border shadow-sm">
+                <div class="text-[11px] font-semibold text-[var(--muted-foreground)] uppercase tracking-wider">Diferencial Anual Total</div>
+                <div id="kpi-annual-savings" class="text-xl font-extrabold mt-1 text-emerald-600 dark:text-emerald-400">$0 USD</div>
+                <div class="text-xs text-[var(--muted-foreground)] mt-1">Generación: <span id="kpi-vol-label">172,800</span> tonv/año</div>
+            </div>
+
+            <div class="card-surface p-4 rounded-2xl border shadow-sm">
+                <div class="text-[11px] font-semibold text-[var(--muted-foreground)] uppercase tracking-wider">Costo Vapor Gas (+Impuestos)</div>
+                <div id="kpi-cost-gas" class="text-xl font-extrabold mt-1 text-blue-600 dark:text-blue-400">$32.15 <span class="text-xs font-normal text-gray-500">US$/ton</span></div>
+                <div id="kpi-gas-sub-detail" class="text-xs text-[var(--muted-foreground)] mt-1">Base: $30.98 | Impuestos: $1.17</div>
+            </div>
+
+            <div class="card-surface p-4 rounded-2xl border shadow-sm">
+                <div class="text-[11px] font-semibold text-[var(--muted-foreground)] uppercase tracking-wider">Costo Vapor Biomasa (+Impuesto Verde)</div>
+                <div id="kpi-cost-bio" class="text-xl font-extrabold mt-1 text-emerald-600 dark:text-emerald-400">$26.09 <span class="text-xs font-normal text-gray-500">US$/ton</span></div>
+                <div id="kpi-bio-sub-detail" class="text-xs text-[var(--muted-foreground)] mt-1">Operación: $25.28 | Impuesto: $0.81</div>
+            </div>
+        </div>
+
+        <!-- MAIN LAYOUT GRID (DOS TABLAS DE PLANILLA HOMOGÉNEAS SIDE-BY-SIDE) -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
+
+            <!-- TABLA PLANILLA CALDERA A GAS -->
+            <div class="card-surface p-5 rounded-2xl border shadow-sm flex flex-col justify-between space-y-4 h-full">
+                <div class="space-y-4">
+                    <div class="flex justify-between items-center border-b pb-3">
+                        <div>
+                            <h2 class="text-base font-bold text-blue-700 dark:text-blue-400 flex items-center gap-2">
+                                <span class="w-3 h-3 rounded-full bg-blue-500"></span>
+                                <span>Costo Unitario Vapor — Caldera a Gas</span>
+                            </h2>
+                            <p class="text-xs text-[var(--muted-foreground)]">💡 Haz clic en celdas amarillas para ver fórmulas</p>
+                        </div>
+                        <span id="tax-status-badge" class="text-[10px] px-2 py-1 rounded-full font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
+                            Exento de Impuestos
+                        </span>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-xs text-left border-collapse">
+                            <thead>
+                                <tr class="bg-gray-100 dark:bg-gray-800 text-[var(--foreground)] border-b">
+                                    <th class="p-1.5 font-bold">Parámetro / Variable</th>
+                                    <th class="p-1.5 font-bold text-center w-24">Unidad</th>
+                                    <th class="p-1.5 font-bold text-right w-32">Caldera</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-[var(--border)]">
+                                <tr>
+                                    <td class="py-1.5 px-2">Entalpia vapor (25 bar)</td>
+                                    <td class="py-1.5 px-2 text-center text-gray-500">kCal/kg</td>
+                                    <td class="py-1.5 px-2 text-right"><input type="number" id="entalpiaVapor" value="670" oninput="calculate()" class="w-24 p-1 text-right rounded border input-style" /></td>
+                                </tr>
+                                
+                                <tr class="yellow-calc" onclick="showFormulaModal('costo_gas_clp')" title="Haz clic para ver el método de cálculo">
+                                    <td class="py-1.5 px-2 font-bold flex items-center gap-1.5">
+                                        <span>Costo gas</span>
+                                        <svg class="w-3.5 h-3.5 text-amber-700 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                    </td>
+                                    <td class="py-1.5 px-2 text-center font-semibold">$/m³</td>
+                                    <td class="py-1.5 px-2 text-right font-extrabold" id="calc-costo-gas-clp">287,99</td>
+                                </tr>
+
+                                <tr>
+                                    <td class="py-1.5 px-2">Tarifa</td>
+                                    <td class="py-1.5 px-2 text-center text-gray-500">US$/MMBtu</td>
+                                    <td class="py-1.5 px-2 text-right"><input type="number" id="tarifaGas" value="8.20" step="0.1" oninput="calculate()" class="w-24 p-1 text-right rounded border input-style" /></td>
+                                </tr>
+                                <tr>
+                                    <td class="py-1.5 px-2">Eficiencia</td>
+                                    <td class="py-1.5 px-2 text-center text-gray-500">%</td>
+                                    <td class="py-1.5 px-2 text-right"><input type="number" id="eficiencia" value="95" step="1" oninput="calculate()" class="w-24 p-1 text-right rounded border input-style" /></td>
+                                </tr>
+                                <tr>
+                                    <td class="py-1.5 px-2">PCI gas natural</td>
+                                    <td class="py-1.5 px-2 text-center text-gray-500">kCal/m³</td>
+                                    <td class="py-1.5 px-2 text-right"><input type="number" id="pciGas" value="8300" step="50" oninput="calculate()" class="w-24 p-1 text-right rounded border input-style" /></td>
+                                </tr>
+                                <tr>
+                                    <td class="py-1.5 px-2">Densidad gas natural</td>
+                                    <td class="py-1.5 px-2 text-center text-gray-500">kg/Nm³</td>
+                                    <td class="py-1.5 px-2 text-right"><input type="number" id="densidadGas" value="0.76" step="0.01" oninput="calculate()" class="w-24 p-1 text-right rounded border input-style" /></td>
+                                </tr>
+                                <tr>
+                                    <td class="py-1.5 px-2">Factor emisión CO2</td>
+                                    <td class="py-1.5 px-2 text-center text-gray-500">kgCO2/kg GN</td>
+                                    <td class="py-1.5 px-2 text-right"><input type="number" id="factorEmisionCO2" value="2.75" step="0.05" oninput="calculate()" class="w-24 p-1 text-right rounded border input-style" /></td>
+                                </tr>
+                                <tr>
+                                    <td class="py-1.5 px-2">Tasa impuesto verde</td>
+                                    <td class="py-1.5 px-2 text-center text-gray-500">US$/ton CO2</td>
+                                    <td class="py-1.5 px-2 text-right"><input type="number" id="tasaImpuestoVerde" value="5.00" step="0.5" oninput="calculate()" class="w-24 p-1 text-right rounded border input-style" /></td>
+                                </tr>
+                                <tr>
+                                    <td class="py-1.5 px-2">Población Coronel</td>
+                                    <td class="py-1.5 px-2 text-center text-gray-500">UN</td>
+                                    <td class="py-1.5 px-2 text-right"><input type="number" id="poblacionCoronel" value="128000" step="1000" oninput="calculate()" class="w-24 p-1 text-right rounded border input-style" /></td>
+                                </tr>
+
+                                <!-- OPEX FIJO GAS -->
+                                <tr>
+                                    <td class="py-1.5 px-2 font-medium">Mano de Obra</td>
+                                    <td class="py-1.5 px-2 text-center text-gray-500">US$/ton vapor</td>
+                                    <td class="py-1.5 px-2 text-right"><input type="number" id="manoObraGas" value="0.00" step="0.1" oninput="calculate()" class="w-24 p-1 text-right rounded border input-style" /></td>
+                                </tr>
+                                <tr>
+                                    <td class="py-1.5 px-2 font-medium">Gastos de Fábrica (mant)</td>
+                                    <td class="py-1.5 px-2 text-center text-gray-500">US$/ton vapor</td>
+                                    <td class="py-1.5 px-2 text-right"><input type="number" id="gastosFabricaGas" value="1.01" step="0.05" oninput="calculate()" class="w-24 p-1 text-right rounded border input-style" /></td>
+                                </tr>
+                                <tr>
+                                    <td class="py-1.5 px-2 font-medium">Energía</td>
+                                    <td class="py-1.5 px-2 text-center text-gray-500">US$/ton vapor</td>
+                                    <td class="py-1.5 px-2 text-right"><input type="number" id="energiaGas" value="1.00" step="0.05" oninput="calculate()" class="w-24 p-1 text-right rounded border input-style" /></td>
+                                </tr>
+                                <tr>
+                                    <td class="py-1.5 px-2 font-medium">Repuestos</td>
+                                    <td class="py-1.5 px-2 text-center text-gray-500">US$/ton vapor</td>
+                                    <td class="py-1.5 px-2 text-right"><input type="number" id="repuestosGas" value="0.50" step="0.05" oninput="calculate()" class="w-24 p-1 text-right rounded border input-style" /></td>
+                                </tr>
+                                <tr>
+                                    <td class="py-1.5 px-2 font-medium">Químicos</td>
+                                    <td class="py-1.5 px-2 text-center text-gray-500">US$/ton vapor</td>
+                                    <td class="py-1.5 px-2 text-right"><input type="number" id="quimicosGas" value="0.26" step="0.05" oninput="calculate()" class="w-24 p-1 text-right rounded border input-style" /></td>
+                                </tr>
+
+                                <!-- CONSUMOS Y COSTO UNITARIO GAS -->
+                                <tr class="yellow-calc" onclick="showFormulaModal('costo_gas_usd')" title="Haz clic para ver el método de cálculo">
+                                    <td class="py-1.5 px-2 font-bold flex items-center gap-1.5">
+                                        <span>Costo gas</span>
+                                        <svg class="w-3.5 h-3.5 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                    </td>
+                                    <td class="py-1.5 px-2 text-center font-semibold">US$/ton vapor</td>
+                                    <td class="py-1.5 px-2 text-right font-extrabold" id="calc-costo-gas-usd-tonv">28,21</td>
+                                </tr>
+                                <tr class="yellow-calc" onclick="showFormulaModal('consumo_gas_kg_tonv')" title="Haz clic para ver el método de cálculo">
+                                    <td class="py-1.5 px-2 font-bold flex items-center gap-1.5">
+                                        <span>Consumo gas</span>
+                                        <svg class="w-3.5 h-3.5 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                    </td>
+                                    <td class="py-1.5 px-2 text-center font-semibold">kg/tonv</td>
+                                    <td class="py-1.5 px-2 text-right font-extrabold" id="calc-consumo-gas-kg-tonv">70,7</td>
+                                </tr>
+
+                                <!-- CONSUMO GAS m3/tonv (AUTOMÁTICO VS MANUAL) -->
+                                <tr class="yellow-calc border-2 border-amber-400">
+                                    <td class="py-1.5 px-2 font-bold flex flex-col justify-center">
+                                        <div class="flex items-center gap-1.5 cursor-pointer" onclick="showFormulaModal('consumo_gas_m3_tonv')" title="Haz clic para ver el método de cálculo">
+                                            <span>Consumo gas</span>
+                                            <span id="label-mode-m3" class="text-[9px] px-1.5 py-0.5 rounded bg-amber-200 text-amber-900 border border-amber-400 font-bold">Auto</span>
+                                            <svg class="w-3.5 h-3.5 text-amber-700 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                        </div>
+                                        <label class="flex items-center gap-1 text-[10px] font-normal text-amber-950 dark:text-amber-200 cursor-pointer mt-0.5" onclick="event.stopPropagation()">
+                                            <input type="checkbox" id="toggleManualM3" onchange="calculate()" class="rounded text-amber-600 focus:ring-amber-500 w-3 h-3">
+                                            <span>Ingreso Manual</span>
+                                        </label>
+                                    </td>
+                                    <td class="py-1.5 px-2 text-center font-semibold" onclick="showFormulaModal('consumo_gas_m3_tonv')">m3/tonv</td>
+                                    <td class="py-1.5 px-2 text-right" onclick="event.stopPropagation()">
+                                        <input type="number" id="inputConsumoGasM3" value="71.0" step="0.1" oninput="calculate()" class="w-24 p-1 text-right rounded border input-style font-extrabold text-sm yellow-calc border-amber-400" />
+                                    </td>
+                                </tr>
+
+                                <tr class="yellow-calc text-[11px]" onclick="showFormulaModal('consumo_gas_anual')" title="Haz clic para ver el método de cálculo">
+                                    <td class="py-1 px-2 font-medium flex items-center gap-1">
+                                        <span>Consumo gas (kg/año)</span>
+                                        <svg class="w-3 h-3 opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                    </td>
+                                    <td class="py-1 px-2 text-center">kg/año</td>
+                                    <td class="py-1 px-2 text-right font-mono" id="calc-consumo-gas-kg-ano">12.217.554</td>
+                                </tr>
+                                <tr class="yellow-calc text-[11px]" onclick="showFormulaModal('consumo_gas_anual')" title="Haz clic para ver el método de cálculo">
+                                    <td class="py-1 px-2 font-medium flex items-center gap-1">
+                                        <span>Consumo gas (m³/año)</span>
+                                        <svg class="w-3 h-3 opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                    </td>
+                                    <td class="py-1 px-2 text-center">m3/año</td>
+                                    <td class="py-1 px-2 text-right font-mono" id="calc-consumo-gas-m3-ano">16.075.861</td>
+                                </tr>
+
+                                <!-- RESULTADO OPERACIONAL GAS BASE -->
+                                <tr class="bg-yellow-200 text-yellow-950 dark:bg-yellow-700 dark:text-yellow-100 font-extrabold border-t-2 border-yellow-500 cursor-pointer" onclick="showFormulaModal('costo_total_vapor_gas')" title="Haz clic para ver el método de cálculo">
+                                    <td class="py-2 px-2.5 text-xs uppercase flex items-center gap-1.5">
+                                        <span>Costo total vapor (Base)</span>
+                                        <svg class="w-4 h-4 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                    </td>
+                                    <td class="py-2 px-2.5 text-center text-xs">US$/ton vapor</td>
+                                    <td class="py-2 px-2.5 text-right text-sm" id="calc-costo-total-vapor-gas">30,98</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- DESGLOSE DE IMPUESTOS Y CO2 GAS EN PANEL DEDICADO Y ELEGANTE -->
+                    <div class="p-3 bg-amber-50/70 dark:bg-amber-950/30 rounded-xl border border-amber-200 dark:border-amber-800 space-y-2">
+                        <div class="flex justify-between items-center text-xs font-bold text-amber-900 dark:text-amber-200 border-b border-amber-200/80 pb-1">
+                            <span class="flex items-center gap-1">
+                                <svg class="w-3.5 h-3.5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                                Evaluación de Emisiones & Impuesto Verde Gas
+                            </span>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2 text-[11px]">
+                            <div class="p-1.5 bg-white dark:bg-gray-800 rounded border yellow-calc cursor-pointer" onclick="showFormulaModal('emisiones_co2')">
+                                <div class="text-gray-500 text-[10px]">Emisiones CO₂ Anuales</div>
+                                <div class="font-extrabold text-amber-900 dark:text-amber-200" id="calc-emisiones-co2">34.116 t/año</div>
+                            </div>
+                            <div class="p-1.5 bg-white dark:bg-gray-800 rounded border yellow-calc cursor-pointer" onclick="showFormulaModal('impuesto_co2')">
+                                <div class="text-gray-500 text-[10px]">Impuesto por CO₂</div>
+                                <div class="font-extrabold text-amber-900 dark:text-amber-200" id="calc-impuesto-co2-anual">$170.582 USD/año</div>
+                            </div>
+                            <div class="p-1.5 bg-white dark:bg-gray-800 rounded border yellow-calc cursor-pointer" onclick="showFormulaModal('impuesto_locales')">
+                                <div class="text-gray-500 text-[10px]">Impuesto Local (NOx/MP/SO2)</div>
+                                <div class="font-extrabold text-amber-900 dark:text-amber-200" id="calc-impuesto-locales-anual">$30.906 USD/año</div>
+                            </div>
+                            <div class="p-1.5 bg-white dark:bg-gray-800 rounded border yellow-calc cursor-pointer" onclick="showFormulaModal('proporcion_impuesto_verde_gas')">
+                                <div class="text-gray-500 text-[10px]">Proporción en Vapor</div>
+                                <div class="font-extrabold text-amber-900 dark:text-amber-200" id="calc-impuesto-gas-por-tonv">1,17 US$/tonv</div>
+                            </div>
+                        </div>
+                        <div class="text-[9.5px] font-mono text-gray-600 dark:text-gray-400 flex justify-between pt-0.5 border-t border-amber-200/50">
+                            <span>Tasas MP/NOx/SO2: <strong id="calc-tasas-locales-summary">11.520 / 320 / 128</strong></span>
+                            <span>Emisiones: <strong id="calc-emisiones-locales-summary">1,96 / 26,09 / 0,16</strong></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- KPI FINAL RESULTADO GAS -->
+                <div class="bg-yellow-400 text-yellow-950 dark:bg-yellow-500 dark:text-yellow-950 p-3 rounded-xl font-extrabold cursor-pointer flex justify-between items-center border-2 border-yellow-500 shadow-sm" onclick="showFormulaModal('costo_total_impuestos_gas')" title="Haz clic para ver el método de cálculo">
+                    <div class="text-xs uppercase flex items-center gap-1.5">
+                        <span>COSTO TOTAL GAS + IMPUESTOS</span>
+                        <svg class="w-4 h-4 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    </div>
+                    <div class="text-lg" id="calc-costo-total-impuestos-gas">$32,15 US$/tonv</div>
+                </div>
+            </div>
+
+            <!-- TABLA PLANILLA CALDERA A BIOMASA -->
+            <div class="card-surface p-5 rounded-2xl border shadow-sm flex flex-col justify-between space-y-4 h-full">
+                <div class="space-y-4">
+                    <div class="flex justify-between items-center border-b pb-3">
+                        <div>
+                            <h2 class="text-base font-bold text-emerald-700 dark:text-emerald-400 flex items-center gap-2">
+                                <span class="w-3 h-3 rounded-full bg-emerald-500"></span>
+                                <span>Costo Unitario Vapor — Caldera a Biomasa</span>
+                            </h2>
+                            <p class="text-xs text-[var(--muted-foreground)]">💡 Haz clic en celdas amarillas para ver las fórmulas</p>
+                        </div>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-xs text-left border-collapse">
+                            <thead>
+                                <tr class="bg-gray-100 dark:bg-gray-800 text-[var(--foreground)] border-b">
+                                    <th class="p-1.5 font-bold">Concepto / Costo Unitario</th>
+                                    <th class="p-1.5 font-bold text-center w-24">Unidad</th>
+                                    <th class="p-1.5 font-bold text-right w-32">Caldera</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-[var(--border)]">
+                                <!-- Parámetros Base Biomasa -->
+                                <tr>
+                                    <td class="py-1.5 px-2">Precio biomasa</td>
+                                    <td class="py-1.5 px-2 text-center text-gray-500">$/m³</td>
+                                    <td class="py-1.5 px-2 text-right"><input type="number" id="precioBiomasaPesos" value="8500" step="100" oninput="calculate()" class="w-24 p-1 text-right rounded border input-style font-medium" /></td>
+                                </tr>
+                                <tr>
+                                    <td class="py-1.5 px-2">Específico de biomasa</td>
+                                    <td class="py-1.5 px-2 text-center text-gray-500">m³st/tonv</td>
+                                    <td class="py-1.5 px-2 text-right"><input type="number" id="especificoBiomasa" value="1.30" step="0.05" oninput="calculate()" class="w-24 p-1 text-right rounded border input-style font-medium" /></td>
+                                </tr>
+
+                                <tr class="yellow-calc" onclick="showFormulaModal('biomasa_tissue_l8')" title="Haz clic para ver el método de cálculo">
+                                    <td class="py-1.5 px-2 font-bold flex items-center gap-1.5">
+                                        <span>Biomasa Tissue</span>
+                                        <svg class="w-3.5 h-3.5 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                    </td>
+                                    <td class="py-1.5 px-2 text-center font-semibold">US$/ton vapor</td>
+                                    <td class="py-1.5 px-2 text-right font-extrabold" id="calc-biomasa-tissue-l8">11,63</td>
+                                </tr>
+
+                                <!-- OPEX FIJO BIOMASA -->
+                                <tr>
+                                    <td class="py-1.5 px-2 font-medium">Mano de Obra</td>
+                                    <td class="py-1.5 px-2 text-center text-gray-500">US$/ton vapor</td>
+                                    <td class="py-1.5 px-2 text-right"><input type="number" id="manoObraBio" value="6.23" step="0.1" oninput="calculate()" class="w-24 p-1 text-right rounded border input-style" /></td>
+                                </tr>
+                                <tr>
+                                    <td class="py-1.5 px-2 font-medium">Gastos de Fábrica</td>
+                                    <td class="py-1.5 px-2 text-center text-gray-500">US$/ton vapor</td>
+                                    <td class="py-1.5 px-2 text-right"><input type="number" id="gastosFabricaBio" value="3.91" step="0.1" oninput="calculate()" class="w-24 p-1 text-right rounded border input-style" /></td>
+                                </tr>
+                                <tr>
+                                    <td class="py-1.5 px-2 font-medium">Energía</td>
+                                    <td class="py-1.5 px-2 text-center text-gray-500">US$/ton vapor</td>
+                                    <td class="py-1.5 px-2 text-right"><input type="number" id="energiaBio" value="1.85" step="0.1" oninput="calculate()" class="w-24 p-1 text-right rounded border input-style" /></td>
+                                </tr>
+                                <tr>
+                                    <td class="py-1.5 px-2 font-medium">Repuestos</td>
+                                    <td class="py-1.5 px-2 text-center text-gray-500">US$/ton vapor</td>
+                                    <td class="py-1.5 px-2 text-right"><input type="number" id="repuestosBio" value="0.77" step="0.05" oninput="calculate()" class="w-24 p-1 text-right rounded border input-style" /></td>
+                                </tr>
+                                <tr>
+                                    <td class="py-1.5 px-2 font-medium">Químicos</td>
+                                    <td class="py-1.5 px-2 text-center text-gray-500">US$/ton vapor</td>
+                                    <td class="py-1.5 px-2 text-right"><input type="number" id="quimicosBio" value="0.26" step="0.05" oninput="calculate()" class="w-24 p-1 text-right rounded border input-style" /></td>
+                                </tr>
+                                <tr>
+                                    <td class="py-1.5 px-2 font-medium">Diesel cargador</td>
+                                    <td class="py-1.5 px-2 text-center text-gray-500">US$/ton vapor</td>
+                                    <td class="py-1.5 px-2 text-right"><input type="number" id="dieselCargadorBio" value="0.36" step="0.05" oninput="calculate()" class="w-24 p-1 text-right rounded border input-style" /></td>
+                                </tr>
+                                <tr>
+                                    <td class="py-1.5 px-2 font-medium">Disposición de ceniza</td>
+                                    <td class="py-1.5 px-2 text-center text-gray-500">US$/ton vapor</td>
+                                    <td class="py-1.5 px-2 text-right"><input type="number" id="disposicionCenizaBio" value="0.27" step="0.05" oninput="calculate()" class="w-24 p-1 text-right rounded border input-style" /></td>
+                                </tr>
+
+                                <!-- COSTO TOTAL BIOMASA BASE -->
+                                <tr class="bg-emerald-200 text-emerald-950 dark:bg-emerald-800 dark:text-emerald-100 font-extrabold border-t-2 border-emerald-400 cursor-pointer" onclick="showFormulaModal('costo_total_bio_l16')" title="Haz clic para ver el método de cálculo">
+                                    <td class="py-2 px-2.5 text-xs uppercase flex items-center gap-1.5">
+                                        <span>Costo Total vapor Biomasa (Base)</span>
+                                        <svg class="w-4 h-4 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                    </td>
+                                    <td class="py-2 px-2.5 text-center text-xs">US$/ton vapor</td>
+                                    <td class="py-2 px-2.5 text-right text-sm" id="calc-costo-total-bio-l16">25,28</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- DESGLOSE DE IMPUESTOS Y RESULTADO FINAL BIOMASA -->
+                    <div class="p-3 bg-emerald-50/70 dark:bg-emerald-950/30 rounded-xl border border-emerald-200 dark:border-emerald-800 space-y-2">
+                        <div class="flex justify-between items-center text-xs font-bold text-emerald-900 dark:text-emerald-200 border-b border-emerald-200/80 pb-1">
+                            <span class="flex items-center gap-1">
+                                <svg class="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                Evaluación de Impuesto Verde Biomasa
+                            </span>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2 text-[11px]">
+                            <div class="p-1.5 bg-white dark:bg-gray-800 rounded border">
+                                <div class="text-gray-500 text-[10px]">Impuesto Verde Anual</div>
+                                <div class="font-extrabold text-emerald-900 dark:text-emerald-200">
+                                    <input type="number" id="impuestoVerdeEscenario1" value="140000" step="5000" oninput="calculate()" class="w-24 p-0.5 text-right rounded border input-style font-extrabold text-emerald-700 dark:text-emerald-300" /> US$/año
+                                </div>
+                            </div>
+                            <div class="p-1.5 bg-white dark:bg-gray-800 rounded border yellow-calc cursor-pointer" onclick="showFormulaModal('impuesto_esc1_por_tonv')">
+                                <div class="text-gray-500 text-[10px]">Proporción en Vapor</div>
+                                <div class="font-extrabold text-emerald-900 dark:text-emerald-200" id="calc-impuesto-esc1-por-tonv">0,81 US$/tonv</div>
+                            </div>
+                        </div>
+                        <div class="text-[9.5px] text-gray-500 dark:text-gray-400 pt-0.5 border-t border-emerald-200/50">
+                            Prorrateo directo del escenario normativo sobre la producción anual de vapor (172.800 tonv/año).
+                        </div>
+                    </div>
+                </div>
+
+                <!-- KPI FINAL RESULTADO BIOMASA -->
+                <div class="bg-emerald-400 text-emerald-950 dark:bg-emerald-500 dark:text-emerald-950 p-3 rounded-xl font-extrabold cursor-pointer flex justify-between items-center border-2 border-emerald-500 shadow-sm" onclick="showFormulaModal('costo_total_esc1_bio_l17')" title="Haz clic para ver el método de cálculo">
+                    <div class="text-xs uppercase flex items-center gap-1.5">
+                        <span>COSTO TOTAL BIOMASA + IMPUESTO VERDE</span>
+                        <svg class="w-4 h-4 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    </div>
+                    <div class="text-lg" id="calc-costo-total-esc1-bio-l17">$26,09 US$/tonv</div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- ESTRUCTURA COMPARATIVA DE COSTOS -->
+        <div class="card-surface p-5 rounded-2xl border shadow-sm space-y-4">
+            <h2 class="text-base font-bold flex items-center justify-between border-b pb-2">
+                <span class="flex items-center gap-2 text-gray-800 dark:text-gray-200">
+                    <svg class="w-5 h-5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+                    Estructura Comparativa de Costos
+                </span>
+                <span class="text-xs text-[var(--muted-foreground)]">US$ / ton vapor</span>
+            </h2>
+
+            <div class="space-y-4 pt-1">
+                <!-- Bar Gas -->
+                <div>
+                    <div class="flex justify-between text-xs font-bold mb-1">
+                        <span class="text-blue-600 dark:text-blue-400">Gas Natural (+Impuestos)</span>
+                        <span id="bar-gas-total-text">$32.15 US$/ton</span>
+                    </div>
+                    <div class="w-full bg-gray-100 dark:bg-gray-800 rounded-full h-7 flex overflow-hidden p-0.5 border">
+                        <div id="bar-gas-fuel" class="bg-blue-500 h-full transition-all duration-300 flex items-center justify-center text-[10px] text-white font-bold" style="width: 70%">$28.21</div>
+                        <div id="bar-gas-fixed" class="bg-indigo-400 h-full transition-all duration-300 flex items-center justify-center text-[10px] text-white font-bold" style="width: 15%">$2.77</div>
+                        <div id="bar-gas-tax" class="bg-amber-500 h-full transition-all duration-300 flex items-center justify-center text-[10px] text-white font-bold" style="width: 15%">$1.17</div>
+                    </div>
+                </div>
+
+                <!-- Bar Biomass -->
+                <div>
+                    <div class="flex justify-between text-xs font-bold mb-1">
+                        <span class="text-emerald-600 dark:text-emerald-400">Biomasa (+Impuesto Verde)</span>
+                        <span id="bar-bio-total-text">$26.09 US$/ton</span>
+                    </div>
+                    <div class="w-full bg-gray-100 dark:bg-gray-800 rounded-full h-7 flex overflow-hidden p-0.5 border">
+                        <div id="bar-bio-fuel" class="bg-emerald-500 h-full transition-all duration-300 flex items-center justify-center text-[10px] text-white font-bold" style="width: 45%">$11.63</div>
+                        <div id="bar-bio-fixed" class="bg-teal-600 h-full transition-all duration-300 flex items-center justify-center text-[10px] text-white font-bold" style="width: 45%">$13.65</div>
+                        <div id="bar-bio-tax" class="bg-amber-600 h-full transition-all duration-300 flex items-center justify-center text-[10px] text-white font-bold" style="width: 10%">$0.81</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SECCIÓN COMPLETA: PUNTO DE EQUILIBRIO Y GRÁFICOS DE INFLEXIÓN -->
+        <div class="card-surface p-5 md:p-6 rounded-2xl border shadow-sm space-y-6">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-2 border-b pb-3">
+                <div>
+                    <h2 class="text-base font-bold flex items-center gap-2 text-amber-600 dark:text-amber-400">
+                        <svg class="w-5 h-5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>
+                        Análisis de Indiferencia (Punto de Equilibrio y Curvas de Inflexión)
+                    </h2>
+                    <p class="text-xs text-[var(--muted-foreground)]">Gráficos dinámicos de sensibilidad que ilustran la intersección exacta (Punto de Inflexión) donde la conveniencia económica cambia entre combustibles.</p>
+                </div>
+                <div id="indifference-summary-badge" class="text-xs px-3 py-1.5 rounded-xl font-bold bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-300 border border-amber-300 dark:border-amber-800">
+                    Calculando Umbrales...
+                </div>
+            </div>
+
+            <!-- TARJETAS RESUMEN DE INDIFERENCIA -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="p-4 rounded-xl border bg-gradient-to-br from-emerald-50/60 to-amber-50/40 dark:from-emerald-950/20 dark:to-amber-950/20 border-emerald-200 dark:border-emerald-800 space-y-1.5">
+                    <div class="flex justify-between items-center">
+                        <span class="text-xs font-bold text-emerald-900 dark:text-emerald-300 uppercase tracking-wide">Precio Máx. Biomasa Indiferente</span>
+                        <span class="text-[10px] px-2 py-0.5 rounded bg-emerald-200 dark:bg-emerald-900 text-emerald-900 dark:text-emerald-200 font-semibold">Límite Competitivo</span>
+                    </div>
+                    <div id="be-bio-price" class="text-2xl font-black text-emerald-700 dark:text-emerald-400">$0 CLP/m³</div>
+                    <p id="be-bio-status-text" class="text-xs text-[var(--muted-foreground)] pt-1 border-t border-emerald-200/50">Límite para que la biomasa compita en costos con el gas.</p>
+                </div>
+
+                <div class="p-4 rounded-xl border bg-gradient-to-br from-blue-50/60 to-indigo-50/40 dark:from-blue-950/20 dark:to-indigo-950/20 border-blue-200 dark:border-blue-800 space-y-1.5">
+                    <div class="flex justify-between items-center">
+                        <span class="text-xs font-bold text-blue-900 dark:text-blue-300 uppercase tracking-wide">Precio Mín. Gas Natural Indiferente</span>
+                        <span class="text-[10px] px-2 py-0.5 rounded bg-blue-200 dark:bg-blue-900 text-blue-900 dark:text-blue-200 font-semibold">Piso de Cambio</span>
+                    </div>
+                    <div id="be-gas-price" class="text-2xl font-black text-blue-700 dark:text-blue-400">$0 CLP/m³</div>
+                    <p id="be-gas-status-text" class="text-xs text-[var(--muted-foreground)] pt-1 border-t border-blue-200/50">Si el gas supera este valor, la biomasa pasa a ser más económica.</p>
+                </div>
+            </div>
+
+            <!-- GRÁFICOS INTERACTIVOS DE INFLEXIÓN SIDE-BY-SIDE -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 pt-2">
+                <!-- Chart 1: Sensitivity to Biomass Price -->
+                <div class="card-surface p-4 rounded-xl border shadow-inner space-y-3 bg-gray-50/50 dark:bg-gray-800/40">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <h3 class="text-xs font-bold text-gray-800 dark:text-gray-200 flex items-center gap-1.5">
+                                <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+                                Sensibilidad al Precio de Biomasa
+                            </h3>
+                            <p class="text-[11px] text-gray-500">Varía precio de biomasa manteniendo tarifa de gas constante</p>
+                        </div>
+                        <div class="flex items-center gap-2 text-[10px]">
+                            <span class="flex items-center gap-1 font-semibold text-blue-600 dark:text-blue-400"><span class="w-2.5 h-0.5 bg-blue-600"></span> Gas</span>
+                            <span class="flex items-center gap-1 font-semibold text-emerald-600 dark:text-emerald-400"><span class="w-2.5 h-0.5 bg-emerald-600"></span> Biomasa</span>
+                        </div>
+                    </div>
+                    <div id="chart-biomass-sensitivity" class="w-full bg-white dark:bg-gray-900 rounded-lg p-2 border border-gray-200 dark:border-gray-700"></div>
+                </div>
+
+                <!-- Chart 2: Sensitivity to Natural Gas Tariff -->
+                <div class="card-surface p-4 rounded-xl border shadow-inner space-y-3 bg-gray-50/50 dark:bg-gray-800/40">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <h3 class="text-xs font-bold text-gray-800 dark:text-gray-200 flex items-center gap-1.5">
+                                <span class="w-2.5 h-2.5 rounded-full bg-blue-500"></span>
+                                Sensibilidad a Tarifa de Gas Natural
+                            </h3>
+                            <p class="text-[11px] text-gray-500">Varía tarifa de gas manteniendo precio de biomasa constante</p>
+                        </div>
+                        <div class="flex items-center gap-2 text-[10px]">
+                            <span class="flex items-center gap-1 font-semibold text-emerald-600 dark:text-emerald-400"><span class="w-2.5 h-0.5 bg-emerald-600"></span> Biomasa</span>
+                            <span class="flex items-center gap-1 font-semibold text-blue-600 dark:text-blue-400"><span class="w-2.5 h-0.5 bg-blue-600"></span> Gas</span>
+                        </div>
+                    </div>
+                    <div id="chart-gas-sensitivity" class="w-full bg-white dark:bg-gray-900 rounded-lg p-2 border border-gray-200 dark:border-gray-700"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SECCIÓN: INFORME EJECUTIVO IMPRIMIBLE (ENESA) CON GRÁFICOS INTEGRADOS (EXACTO A IMAGEN 1 Y 2) -->
+        <div id="informe-ejecutivo-section" class="card-surface p-4 md:p-5 rounded-2xl border shadow-sm space-y-2.5 bg-white text-gray-900 dark:bg-gray-900 dark:text-gray-100">
+            <!-- HEADER DE INFORME -->
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center border-b pb-2 gap-3">
+                <div class="flex items-center gap-2.5">
+                    <img src="enesa_logo.png" alt="Enesa" class="h-8 w-auto" />
+                    <div>
+                        <div class="text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-widest leading-tight">ENESA</div>
+                        <h2 class="text-base md:text-lg font-black text-gray-900 dark:text-white leading-tight">Informe Ejecutivo: Evaluación Técnica y Económica de Combustibles</h2>
+                    </div>
+                </div>
+                <div class="text-right text-[11px] text-gray-500 leading-tight">
+                    <div><strong>Fecha:</strong> <span id="report-date">24-09-2026</span></div>
+                    <div><strong>Preparado por:</strong> Erik Flandes Medina</div>
+                </div>
+            </div>
+
+            <!-- RESUMEN EJECUTIVO NARRATIVO -->
+            <div class="space-y-1.5 text-[11px] leading-snug text-gray-700 dark:text-gray-300" id="executive-narrative">
+                <!-- Se llena dinámicamente -->
+            </div>
+
+            <!-- MATRIZ COMPARATIVA DE PROYECTO (IMAGEN 1) -->
+            <div class="overflow-x-auto pt-0.5">
+                <table class="w-full text-[11px] text-left border-collapse border border-gray-200 dark:border-gray-700">
+                    <thead>
+                        <tr class="bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-b">
+                            <th class="py-1.5 px-2 font-bold border-r">Variable / Indicador Clave</th>
+                            <th class="py-1.5 px-2 font-bold text-center border-r bg-blue-50/50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300">Caldera a Gas Natural</th>
+                            <th class="py-1.5 px-2 font-bold text-center bg-emerald-50/50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300">Caldera a Biomasa</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-200 dark:divide-gray-700 font-mono">
+                        <tr>
+                            <td class="py-1 px-2 border-r font-sans font-medium">Consumo Específico de Combustible</td>
+                            <td class="py-1 px-2 text-center border-r" id="rep-gas-cons">54,0 kg/tonv (71,0 m³/tonv)</td>
+                            <td class="py-1 px-2 text-center" id="rep-bio-cons">1,30 m³st/tonv</td>
+                        </tr>
+                        <tr>
+                            <td class="py-1 px-2 border-r font-sans font-medium">Caudal y Consumo de Combustible <span class="text-[9.5px] font-normal text-gray-500">(m³/h | m³/día | m³/periodo año)</span></td>
+                            <td class="py-1 px-2 text-center border-r text-[10.5px]" id="rep-gas-flows">1.420 m³/h | 34.091 m³/día | 12.272.727 m³/año</td>
+                            <td class="py-1 px-2 text-center text-[10.5px]" id="rep-bio-flows">26,0 m³st/h | 624 m³st/día | 224.640 m³st/año</td>
+                        </tr>
+                        <tr>
+                            <td class="py-1 px-2 border-r font-sans font-medium">Costo Directo Combustible (US$/tonv)</td>
+                            <td class="py-1 px-2 text-center border-r" id="rep-gas-fuel-cost">$21.52 US$/tonv</td>
+                            <td class="py-1 px-2 text-center" id="rep-bio-fuel-cost">$11.63 US$/tonv</td>
+                        </tr>
+                        <tr>
+                            <td class="py-1 px-2 border-r font-sans font-medium">OPEX Fijo Operacional (US$/tonv) <span class="text-[9.5px] font-normal text-gray-500">(Gas: sin mano de obra incremental)</span></td>
+                            <td class="py-1 px-2 text-center border-r" id="rep-gas-fixed">$2.77 US$/tonv</td>
+                            <td class="py-1 px-2 text-center" id="rep-bio-fixed">$13.65 US$/tonv</td>
+                        </tr>
+                        <tr>
+                            <td class="py-1 px-2 border-r font-sans font-medium">Proporción Impuesto Verde (US$/tonv)</td>
+                            <td class="py-1 px-2 text-center border-r" id="rep-gas-tax">$1.17 US$/tonv</td>
+                            <td class="py-1 px-2 text-center" id="rep-bio-tax">$0.81 US$/tonv</td>
+                        </tr>
+                        <tr class="bg-amber-50/40 dark:bg-amber-950/20">
+                            <td class="py-1 px-2 border-r font-sans font-medium">Horas Máx. Operación Anual Exenta Impuesto Verde (&lt; 25.000 t CO₂/año)</td>
+                            <td class="py-1 px-2 text-center border-r font-bold text-amber-700 dark:text-amber-400" id="rep-gas-max-hours">8.419 h/año</td>
+                            <td class="py-1 px-2 text-center text-gray-400 font-sans">N/A (Escenario Fijo)</td>
+                        </tr>
+                        <tr class="font-extrabold bg-gray-50 dark:bg-gray-800/80">
+                            <td class="py-1.5 px-2 border-r font-sans text-xs uppercase">COSTO TOTAL VAPOR (US$/TONV)</td>
+                            <td class="py-1.5 px-2 text-center border-r text-blue-600 dark:text-blue-400 text-xs" id="rep-gas-total">$25.46 US$/tonv</td>
+                            <td class="py-1.5 px-2 text-center text-emerald-600 dark:text-emerald-400 text-xs" id="rep-bio-total">$26.09 US$/tonv</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- RECOMENDACION (IMAGEN 1) -->
+            <div class="p-2.5 rounded-xl border border-blue-200 dark:border-blue-900 bg-blue-50/50 dark:bg-blue-950/30 space-y-0.5">
+                <div class="text-[10.5px] font-bold text-blue-900 dark:text-blue-300 uppercase tracking-wide">RECOMENDACION</div>
+                <div id="rep-recommendation-text" class="text-[11px] text-blue-950 dark:text-blue-200 leading-snug">
+                    Cargando dictamen estratégico...
+                </div>
+            </div>
+
+            <!-- SECCIÓN GRÁFICOS DE SENSIBILIDAD INTEGRADOS EN EL REPORT ENESA -->
+            <div class="pt-2 border-t space-y-2">
+                <div class="flex justify-between items-center border-b pb-1">
+                    <h3 class="text-[11px] font-bold text-gray-800 dark:text-gray-200 flex items-center gap-1.5">
+                        <svg class="w-3.5 h-3.5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>
+                        Análisis de Sensibilidad y Curvas de Inflexión
+                    </h3>
+                    <span class="text-[8.5px] text-gray-400 font-semibold uppercase tracking-wider">ENESA</span>
+                </div>
+                
+                <!-- CARD CONTENEDORA GENERAL DE GRÁFICOS CON ALINEACIÓN PERFECTA -->
+                <div class="p-2.5 bg-gray-50/60 dark:bg-gray-800/40 rounded-xl border border-gray-200 dark:border-gray-700 space-y-1.5">
+                    <!-- GRID DE 2 COLUMNAS PERFECTAMENTE ALINEADAS Y SIMÉTRICAS -->
+                    <div class="grid grid-cols-2 gap-2.5">
+                        <!-- Chart 1: Biomass Sensitivity -->
+                        <div class="space-y-1">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <h4 class="text-[10.5px] font-bold text-gray-800 dark:text-gray-200 flex items-center gap-1.5 leading-tight">
+                                        <span class="w-2 h-2 rounded-full bg-emerald-500 inline-block shrink-0"></span>
+                                        Sensibilidad al Precio de Biomasa
+                                    </h4>
+                                    <p class="text-[9px] text-gray-500 font-normal mt-0.5 leading-tight">Varía precio de biomasa manteniendo tarifa de gas constante</p>
+                                </div>
+                                <div class="flex items-center gap-2 text-[8.5px] shrink-0 pt-0.5">
+                                    <span class="text-blue-600 dark:text-blue-400 font-semibold flex items-center gap-1"><span class="w-2.5 h-0.5 bg-blue-600 inline-block"></span> Gas</span>
+                                    <span class="text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-1"><span class="w-2.5 h-0.5 bg-emerald-600 inline-block"></span> Biomasa</span>
+                                </div>
+                            </div>
+                            <div id="report-chart-biomass" class="w-full bg-white dark:bg-gray-900 rounded-lg p-1 border border-gray-200 dark:border-gray-700"></div>
+                        </div>
+
+                        <!-- Chart 2: Gas Sensitivity -->
+                        <div class="space-y-1">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <h4 class="text-[10.5px] font-bold text-gray-800 dark:text-gray-200 flex items-center gap-1.5 leading-tight">
+                                        <span class="w-2 h-2 rounded-full bg-blue-500 inline-block shrink-0"></span>
+                                        Sensibilidad a Tarifa de Gas Natural
+                                    </h4>
+                                    <p class="text-[9px] text-gray-500 font-normal mt-0.5 leading-tight">Varía tarifa de gas manteniendo precio de biomasa constante</p>
+                                </div>
+                                <div class="flex items-center gap-2 text-[8.5px] shrink-0 pt-0.5">
+                                    <span class="text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-1"><span class="w-2.5 h-0.5 bg-emerald-600 inline-block"></span> Biomasa</span>
+                                    <span class="text-blue-600 dark:text-blue-400 font-semibold flex items-center gap-1"><span class="w-2.5 h-0.5 bg-blue-600 inline-block"></span> Gas</span>
+                                </div>
+                            </div>
+                            <div id="report-chart-gas" class="w-full bg-white dark:bg-gray-900 rounded-lg p-1 border border-gray-200 dark:border-gray-700"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- AGENTE IA SYSTEM PROMPT BOX (NO PRINT) -->
+        <div class="card-surface p-5 rounded-2xl border shadow-sm bg-slate-900 text-slate-100 border-slate-800 space-y-3 no-print">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+                <h3 class="text-sm font-bold text-indigo-400 flex items-center gap-2">
+                    <span>Agente Evaluador IA</span>
+                </h3>
+                <button onclick="copyPrompt()" class="text-[11px] bg-indigo-600 hover:bg-indigo-500 text-white font-medium px-2.5 py-1 rounded-lg transition">
+                    <span id="copy-btn-label">Copiar System Prompt</span>
+                </button>
+            </div>
+
+            <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 font-mono text-[11px] text-emerald-400 overflow-y-auto max-h-[160px] leading-relaxed select-all" id="system-prompt-text">
+                Cargando prompt dinámico...
+            </div>
+        </div>
+
+    </div>
+
+    <!-- MODAL POPUP PARA EXPLICACIÓN Y FÓRMULAS DE CÁLCULO EN VIVO -->
+    <div id="formula-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 hidden z-50 animate-fade-in no-print">
+        <div class="card-surface max-w-xl w-full p-6 rounded-2xl border shadow-2xl space-y-4 relative">
+            <button onclick="closeFormulaModal()" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 dark:hover:text-white text-2xl font-bold transition">&times;</button>
+            
+            <div class="flex items-center gap-2 border-b pb-3">
+                <span class="p-2 bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 rounded-lg">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
+                </span>
+                <div>
+                    <h3 id="modal-variable-name" class="text-lg font-bold text-gray-900 dark:text-white">Método de Cálculo</h3>
+                    <p id="modal-variable-badge" class="text-xs font-semibold text-amber-600 dark:text-amber-400">Fórmula de Ingeniería en Vivo</p>
+                </div>
+            </div>
+
+            <div id="modal-body-content" class="text-xs space-y-3 leading-relaxed">
+                <!-- Dynamic Formula evaluation inserted here -->
+            </div>
+
+            <div class="pt-3 border-t flex justify-end">
+                <button onclick="closeFormulaModal()" class="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-xl text-xs transition">Entendido</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- SCRIPT DE CÁLCULO DUAL, POPUPS DE FÓRMULAS Y PERSISTENCIA -->
+    <script>
+        const STORAGE_KEY = 'evaluador_termico_state_v4';
+
+        const ALL_INPUT_IDS = [
+            'tasaCambio', 'generacionVapor', 'horasOperacion', 'tempAguaAlim',
+            'entalpiaVapor', 'tarifaGas', 'eficiencia', 'pciGas', 'densidadGas',
+            'factorEmisionCO2', 'tasaImpuestoVerde', 'poblacionCoronel',
+            'manoObraGas', 'gastosFabricaGas', 'energiaGas', 'repuestosGas', 'quimicosGas',
+            'precioBiomasaPesos', 'especificoBiomasa', 'manoObraBio', 'gastosFabricaBio',
+            'energiaBio', 'repuestosBio', 'quimicosBio', 'dieselCargadorBio',
+            'disposicionCenizaBio', 'impuestoVerdeEscenario1', 'inputConsumoGasM3'
+        ];
+
+        const ALL_CHECKBOX_IDS = ['toggleManualM3'];
+
+        function saveState() {
+            const state = {};
+            ALL_INPUT_IDS.forEach(id => {
+                const elem = document.getElementById(id);
+                if (elem) state[id] = elem.value;
+            });
+            ALL_CHECKBOX_IDS.forEach(id => {
+                const elem = document.getElementById(id);
+                if (elem) state[id] = elem.checked;
+            });
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+            } catch(e) {}
+        }
+
+        function loadState() {
+            try {
+                const raw = localStorage.getItem(STORAGE_KEY);
+                if (!raw) return;
+                const state = JSON.parse(raw);
+                ALL_INPUT_IDS.forEach(id => {
+                    if (state[id] !== undefined) {
+                        const elem = document.getElementById(id);
+                        if (elem) elem.value = state[id];
+                    }
+                });
+                ALL_CHECKBOX_IDS.forEach(id => {
+                    if (state[id] !== undefined) {
+                        const elem = document.getElementById(id);
+                        if (elem) elem.checked = state[id];
+                    }
+                });
+            } catch(e) {}
+        }
+
+        function exportScenarioJSON() {
+            const state = {};
+            ALL_INPUT_IDS.forEach(id => {
+                const elem = document.getElementById(id);
+                if (elem) state[id] = elem.value;
+            });
+            ALL_CHECKBOX_IDS.forEach(id => {
+                const elem = document.getElementById(id);
+                if (elem) state[id] = elem.checked;
+            });
+            state['_fechaExportacion'] = new Date().toLocaleString('es-CL');
+            state['_empresa'] = 'Enesa';
+            state['_autor'] = 'Erik Flandes Medina';
+
+            const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `escenario_enesa_${new Date().toISOString().slice(0,10)}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function importScenarioJSON(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const state = JSON.parse(e.target.result);
+                    ALL_INPUT_IDS.forEach(id => {
+                        if (state[id] !== undefined) {
+                            const elem = document.getElementById(id);
+                            if (elem) elem.value = state[id];
+                        }
+                    });
+                    ALL_CHECKBOX_IDS.forEach(id => {
+                        if (state[id] !== undefined) {
+                            const elem = document.getElementById(id);
+                            if (elem) elem.checked = state[id];
+                        }
+                    });
+                    calculate();
+                    alert("¡Escenario cargado exitosamente en el evaluador!");
+                } catch(err) {
+                    alert("Error al leer el archivo de escenario (.json). Verifique el formato.");
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function renderBiomassSensitivityChart(containerId, maxBioCLP_m3, currentBioPrice, currentGasSteamCost, opexFijoBioTotal, impuestoEsc1_per_tonv, especificoBiomasa, tasaCambio, currentBioSteamCost) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+
+            // Dynamic X bounds
+            const xMin = 0;
+            const xMax = Math.max(20000, Math.ceil((Math.max(maxBioCLP_m3, currentBioPrice) * 1.25) / 2000) * 2000);
+            
+            // Dynamic Y bounds
+            const bioY1_val = opexFijoBioTotal + impuestoEsc1_per_tonv;
+            const bioY2_val = bioY1_val + (xMax * especificoBiomasa / tasaCambio);
+            const yMin = 0;
+            const maxYVal = Math.max(currentGasSteamCost * 1.3, currentBioSteamCost * 1.3, bioY2_val * 1.05);
+            const yMax = Math.ceil(maxYVal / 10) * 10;
+
+            // SVG Canvas Dimensions
+            const w = 520, h = 260;
+            const padL = 45, padR = 25, padT = 30, padB = 40;
+            const plotW = w - padL - padR;
+            const plotH = h - padT - padB;
+
+            const toSvgX = (val) => padL + ((val - xMin) / (xMax - xMin)) * plotW;
+            const toSvgY = (val) => padT + plotH - ((val - yMin) / (yMax - yMin)) * plotH;
+
+            // Gas Line points (horizontal at currentGasSteamCost)
+            const gasY_svg = toSvgY(currentGasSteamCost);
+            const gasX1_svg = toSvgX(0);
+            const gasX2_svg = toSvgX(xMax);
+
+            // Biomass Line points
+            const bioX1_svg = toSvgX(0);
+            const bioY1_svg = toSvgY(bioY1_val);
+            const bioX2_svg = toSvgX(xMax);
+            const bioY2_svg = toSvgY(bioY2_val);
+
+            // Break-even SVG point
+            const isBreakEvenVisible = maxBioCLP_m3 >= 0 && maxBioCLP_m3 <= xMax;
+            const beX_svg = toSvgX(maxBioCLP_m3);
+            const beY_svg = toSvgY(currentGasSteamCost);
+
+            // Current Op SVG point
+            const currX_svg = toSvgX(currentBioPrice);
+            const currY_svg = toSvgY(currentBioSteamCost);
+
+            // Grid ticks
+            let gridLinesY = '';
+            const yStep = yMax / 4;
+            for (let i = 0; i <= 4; i++) {
+                const yVal = yStep * i;
+                const sy = toSvgY(yVal);
+                gridLinesY += `
+                    <line x1="${padL}" y1="${sy}" x2="${w - padR}" y2="${sy}" stroke="currentColor" stroke-opacity="0.1" stroke-dasharray="2,2" />
+                    <text x="${padL - 6}" y="${sy + 4}" text-anchor="end" class="text-[9px] fill-gray-500 font-mono">$${Math.round(yVal)}</text>
+                `;
+            }
+
+            let gridLinesX = '';
+            const xStep = xMax / 4;
+            for (let i = 0; i <= 4; i++) {
+                const xVal = xStep * i;
+                const sx = toSvgX(xVal);
+                gridLinesX += `
+                    <line x1="${sx}" y1="${padT}" x2="${sx}" y2="${padT + plotH}" stroke="currentColor" stroke-opacity="0.1" stroke-dasharray="2,2" />
+                    <text x="${sx}" y="${padT + plotH + 15}" text-anchor="middle" class="text-[9px] fill-gray-500 font-mono">$${(xVal/1000).toFixed(0)}k</text>
+                `;
+            }
+
+            // Polygons for decision zones
+            const polyBioPrefer = `
+                <polygon points="${gasX1_svg},${gasY_svg} ${beX_svg},${gasY_svg} ${gasX1_svg},${bioY1_svg}" fill="rgba(34, 197, 94, 0.12)" />
+            `;
+            const polyGasPrefer = `
+                <polygon points="${beX_svg},${gasY_svg} ${gasX2_svg},${gasY_svg} ${gasX2_svg},${bioY2_svg}" fill="rgba(59, 130, 246, 0.12)" />
+            `;
+
+            const svgHtml = `
+                <svg viewBox="0 0 ${w} ${h}" class="w-full h-auto font-sans select-none">
+                    <!-- Background rect -->
+                    <rect x="0" y="0" width="${w}" height="${h}" rx="12" class="fill-transparent" />
+
+                    <!-- Shaded decision zones -->
+                    ${polyBioPrefer}
+                    ${polyGasPrefer}
+
+                    <!-- Grid & Axes -->
+                    ${gridLinesY}
+                    ${gridLinesX}
+
+                    <!-- Axis lines -->
+                    <line x1="${padL}" y1="${padT + plotH}" x2="${w - padR}" y2="${padT + plotH}" stroke="currentColor" stroke-opacity="0.3" stroke-width="1.5" />
+                    <line x1="${padL}" y1="${padT}" x2="${padL}" y2="${padT + plotH}" stroke="currentColor" stroke-opacity="0.3" stroke-width="1.5" />
+
+                    <!-- Gas Line (Horizontal) -->
+                    <line x1="${gasX1_svg}" y1="${gasY_svg}" x2="${gasX2_svg}" y2="${gasY_svg}" stroke="#2563eb" stroke-width="2.5" />
+
+                    <!-- Biomass Line (Sloped) -->
+                    <line x1="${bioX1_svg}" y1="${bioY1_svg}" x2="${bioX2_svg}" y2="${bioY2_svg}" stroke="#16a34a" stroke-width="2.5" />
+
+                    <!-- Current Operation Vertical Guideline -->
+                    <line x1="${currX_svg}" y1="${padT}" x2="${currX_svg}" y2="${padT + plotH}" stroke="#ef4444" stroke-width="1.5" stroke-dasharray="4,3" />
+
+                    <!-- Break-even Point Marker (Golden Star/Dot) -->
+                    ${isBreakEvenVisible ? `
+                        <circle cx="${beX_svg}" cy="${beY_svg}" r="6" fill="#f59e0b" stroke="#ffffff" stroke-width="2" />
+                        <rect x="${Math.min(w - padR - 145, Math.max(padL, beX_svg - 72))}" y="${Math.max(5, beY_svg - 24)}" width="145" height="18" rx="4" fill="#1e293b" />
+                        <text x="${Math.min(w - padR - 72, Math.max(padL + 72, beX_svg))}" y="${Math.max(17, beY_svg - 11)}" text-anchor="middle" class="text-[9px] fill-amber-300 font-bold">Inflexión: $${Math.round(maxBioCLP_m3).toLocaleString('es-CL')} CLP/m³</text>
+                    ` : ''}
+
+                    <!-- Current Operation Point Marker (Red Dot) -->
+                    <circle cx="${currX_svg}" cy="${currY_svg}" r="5" fill="#ef4444" stroke="#ffffff" stroke-width="1.5" />
+                    <text x="${currX_svg}" y="${padT + plotH - 6}" text-anchor="middle" class="text-[9px] fill-red-600 font-bold dark:fill-red-400">Actual ($${Math.round(currentBioPrice).toLocaleString('es-CL')})</text>
+
+                    <!-- Axis Titles -->
+                    <text x="${padL + plotW/2}" y="${h - 8}" text-anchor="middle" class="text-[10px] fill-gray-500 font-bold">Precio Biomasa (CLP / m³)</text>
+                    <text x="${12}" y="${padT + plotH/2}" text-anchor="middle" transform="rotate(-90, 12, ${padT + plotH/2})" class="text-[10px] fill-gray-500 font-bold">Costo Vapor (US$/tonv)</text>
+                </svg>
+            `;
+
+            container.innerHTML = svgHtml;
+        }
+
+        function renderGasSensitivityChart(containerId, minGasTariff_USD, minGasCLP_m3, currentGasTariff, currentGasSteamCost, opexFijoGasTotal, impuestoGas_per_tonv, consumoGasM3_tonv, currentBioSteamCost) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+
+            // Dynamic X bounds (Tarifa Gas US$/MMBtu)
+            const xMin = 0;
+            const xMax = Math.max(20, Math.ceil((Math.max(minGasTariff_USD, currentGasTariff) * 1.3) / 5) * 5);
+            
+            // Dynamic Y bounds
+            const gasY1_val = opexFijoGasTotal + impuestoGas_per_tonv;
+            const gasY2_val = gasY1_val + (consumoGasM3_tonv / 27.05 * xMax);
+            const yMin = 0;
+            const maxYVal = Math.max(currentGasSteamCost * 1.3, currentBioSteamCost * 1.3, gasY2_val * 1.05);
+            const yMax = Math.ceil(maxYVal / 10) * 10;
+
+            // SVG Canvas Dimensions
+            const w = 520, h = 260;
+            const padL = 45, padR = 25, padT = 30, padB = 40;
+            const plotW = w - padL - padR;
+            const plotH = h - padT - padB;
+
+            const toSvgX = (val) => padL + ((val - xMin) / (xMax - xMin)) * plotW;
+            const toSvgY = (val) => padT + plotH - ((val - yMin) / (yMax - yMin)) * plotH;
+
+            // Biomass Line points (horizontal at currentBioSteamCost)
+            const bioY_svg = toSvgY(currentBioSteamCost);
+            const bioX1_svg = toSvgX(0);
+            const bioX2_svg = toSvgX(xMax);
+
+            // Gas Line points (sloped)
+            const gasX1_svg = toSvgX(0);
+            const gasY1_svg = toSvgY(gasY1_val);
+            const gasX2_svg = toSvgX(xMax);
+            const gasY2_svg = toSvgY(gasY2_val);
+
+            // Break-even SVG point
+            const isBreakEvenVisible = minGasTariff_USD >= 0 && minGasTariff_USD <= xMax;
+            const beX_svg = toSvgX(minGasTariff_USD);
+            const beY_svg = toSvgY(currentBioSteamCost);
+
+            // Current Op SVG point
+            const currX_svg = toSvgX(currentGasTariff);
+            const currY_svg = toSvgY(currentGasSteamCost);
+
+            // Grid ticks
+            let gridLinesY = '';
+            const yStep = yMax / 4;
+            for (let i = 0; i <= 4; i++) {
+                const yVal = yStep * i;
+                const sy = toSvgY(yVal);
+                gridLinesY += `
+                    <line x1="${padL}" y1="${sy}" x2="${w - padR}" y2="${sy}" stroke="currentColor" stroke-opacity="0.1" stroke-dasharray="2,2" />
+                    <text x="${padL - 6}" y="${sy + 4}" text-anchor="end" class="text-[9px] fill-gray-500 font-mono">$${Math.round(yVal)}</text>
+                `;
+            }
+
+            let gridLinesX = '';
+            const xStep = xMax / 4;
+            for (let i = 0; i <= 4; i++) {
+                const xVal = xStep * i;
+                const sx = toSvgX(xVal);
+                gridLinesX += `
+                    <line x1="${sx}" y1="${padT}" x2="${sx}" y2="${padT + plotH}" stroke="currentColor" stroke-opacity="0.1" stroke-dasharray="2,2" />
+                    <text x="${sx}" y="${padT + plotH + 15}" text-anchor="middle" class="text-[9px] fill-gray-500 font-mono">$${xVal.toFixed(1)}</text>
+                `;
+            }
+
+            // Polygons for decision zones
+            const polyGasPrefer = `
+                <polygon points="${gasX1_svg},${bioY_svg} ${beX_svg},${bioY_svg} ${gasX1_svg},${gasY1_svg}" fill="rgba(59, 130, 246, 0.12)" />
+            `;
+            const polyBioPrefer = `
+                <polygon points="${beX_svg},${bioY_svg} ${gasX2_svg},${bioY_svg} ${gasX2_svg},${gasY2_svg}" fill="rgba(34, 197, 94, 0.12)" />
+            `;
+
+            const svgHtml = `
+                <svg viewBox="0 0 ${w} ${h}" class="w-full h-auto font-sans select-none">
+                    <!-- Background rect -->
+                    <rect x="0" y="0" width="${w}" height="${h}" rx="12" class="fill-transparent" />
+
+                    <!-- Shaded decision zones -->
+                    ${polyGasPrefer}
+                    ${polyBioPrefer}
+
+                    <!-- Grid & Axes -->
+                    ${gridLinesY}
+                    ${gridLinesX}
+
+                    <!-- Axis lines -->
+                    <line x1="${padL}" y1="${padT + plotH}" x2="${w - padR}" y2="${padT + plotH}" stroke="currentColor" stroke-opacity="0.3" stroke-width="1.5" />
+                    <line x1="${padL}" y1="${padT}" x2="${padL}" y2="${padT + plotH}" stroke="currentColor" stroke-opacity="0.3" stroke-width="1.5" />
+
+                    <!-- Biomass Line (Horizontal) -->
+                    <line x1="${bioX1_svg}" y1="${bioY_svg}" x2="${bioX2_svg}" y2="${bioY_svg}" stroke="#16a34a" stroke-width="2.5" />
+
+                    <!-- Gas Line (Sloped) -->
+                    <line x1="${gasX1_svg}" y1="${gasY1_svg}" x2="${gasX2_svg}" y2="${gasY2_svg}" stroke="#2563eb" stroke-width="2.5" />
+
+                    <!-- Current Operation Vertical Guideline -->
+                    <line x1="${currX_svg}" y1="${padT}" x2="${currX_svg}" y2="${padT + plotH}" stroke="#ef4444" stroke-width="1.5" stroke-dasharray="4,3" />
+
+                    <!-- Break-even Point Marker (Golden Star/Dot) -->
+                    ${isBreakEvenVisible ? `
+                        <circle cx="${beX_svg}" cy="${beY_svg}" r="6" fill="#f59e0b" stroke="#ffffff" stroke-width="2" />
+                        <rect x="${Math.min(w - padR - 155, Math.max(padL, beX_svg - 77))}" y="${Math.max(5, beY_svg - 24)}" width="155" height="18" rx="4" fill="#1e293b" />
+                        <text x="${Math.min(w - padR - 77, Math.max(padL + 77, beX_svg))}" y="${Math.max(17, beY_svg - 11)}" text-anchor="middle" class="text-[9px] fill-amber-300 font-bold">Inflexión: $${minGasTariff_USD.toFixed(2)} US$/MMBtu</text>
+                    ` : ''}
+
+                    <!-- Current Operation Point Marker (Red Dot) -->
+                    <circle cx="${currX_svg}" cy="${currY_svg}" r="5" fill="#ef4444" stroke="#ffffff" stroke-width="1.5" />
+                    <text x="${currX_svg}" y="${padT + plotH - 6}" text-anchor="middle" class="text-[9px] fill-red-600 font-bold dark:fill-red-400">Actual ($${currentGasTariff.toFixed(2)})</text>
+
+                    <!-- Axis Titles -->
+                    <text x="${padL + plotW/2}" y="${h - 8}" text-anchor="middle" class="text-[10px] fill-gray-500 font-bold">Tarifa Gas Natural (US$ / MMBtu)</text>
+                    <text x="${12}" y="${padT + plotH/2}" text-anchor="middle" transform="rotate(-90, 12, ${padT + plotH/2})" class="text-[10px] fill-gray-500 font-bold">Costo Vapor (US$/tonv)</text>
+                </svg>
+            `;
+
+            container.innerHTML = svgHtml;
+        }
+
+        function calculate() {
+            // 0. PARÁMETROS COMUNES COMPARTIDOS
+            const tasaCambio = parseFloat(document.getElementById('tasaCambio').value) || 950;
+            const generacionVapor = parseFloat(document.getElementById('generacionVapor').value) || 20;
+            const horasOperacion = parseFloat(document.getElementById('horasOperacion').value) || 8640;
+            const tempAguaAlim = parseFloat(document.getElementById('tempAguaAlim').value) || 110;
+
+            const vaporAnualTotal = generacionVapor * horasOperacion; // tonv/año
+
+            // 1. CÁLCULOS CALDERA A GAS NATURAL
+            const entalpiaVapor = parseFloat(document.getElementById('entalpiaVapor').value) || 670;
+            const tarifaGas = parseFloat(document.getElementById('tarifaGas').value) || 8.20; // US$/MMBtu
+            const eficiencia = (parseFloat(document.getElementById('eficiencia').value) || 95) / 100;
+            const pciGas = parseFloat(document.getElementById('pciGas').value) || 8300; // kCal/m3
+            const densidadGas = parseFloat(document.getElementById('densidadGas').value) || 0.76; // kg/Nm3
+            const factorEmisionCO2 = parseFloat(document.getElementById('factorEmisionCO2').value) || 2.75;
+            const tasaImpuestoVerde = parseFloat(document.getElementById('tasaImpuestoVerde').value) || 5.00;
+            const poblacionCoronel = parseFloat(document.getElementById('poblacionCoronel').value) || 128000;
+
+            // OPEX Fijo Gas
+            const manoObraGas = parseFloat(document.getElementById('manoObraGas').value) || 0;
+            const gastosFabricaGas = parseFloat(document.getElementById('gastosFabricaGas').value) || 1.01;
+            const energiaGas = parseFloat(document.getElementById('energiaGas').value) || 1.00;
+            const repuestosGas = parseFloat(document.getElementById('repuestosGas').value) || 0.50;
+            const quimicosGas = parseFloat(document.getElementById('quimicosGas').value) || 0.26;
+            const opexFijoGasTotal = manoObraGas + gastosFabricaGas + energiaGas + repuestosGas + quimicosGas;
+
+            // CONSUMO GAS m3/tonv: CALCULADO PRIMARIAMENTE A PARTIR DE DELTA H Y PCI (kCal/m3)
+            const isManualM3 = document.getElementById('toggleManualM3').checked;
+            const inputM3Elem = document.getElementById('inputConsumoGasM3');
+            const labelModeM3 = document.getElementById('label-mode-m3');
+
+            let consumoGasM3_tonv;
+
+            if (isManualM3) {
+                labelModeM3.innerText = "Manual";
+                labelModeM3.className = "text-[9px] px-1.5 py-0.5 rounded bg-blue-600 text-white font-bold";
+                inputM3Elem.readOnly = false;
+                consumoGasM3_tonv = parseFloat(inputM3Elem.value) || 71.0;
+            } else {
+                labelModeM3.innerText = "Auto";
+                labelModeM3.className = "text-[9px] px-1.5 py-0.5 rounded bg-amber-200 text-amber-900 border border-amber-400 font-bold";
+                inputM3Elem.readOnly = true;
+                consumoGasM3_tonv = (pciGas * eficiencia > 0) ? (((entalpiaVapor - tempAguaAlim) * 1000) / (eficiencia * pciGas)) : 0;
+                inputM3Elem.value = consumoGasM3_tonv.toFixed(1);
+            }
+
+            // CONSUMO GAS kg/tonv: MULTIPLICA EL VOLUMEN (m3/tonv) POR LA DENSIDAD DEL GAS (kg/Nm3)
+            const consumoGasKg_tonv = consumoGasM3_tonv * densidadGas;
+
+            const consumoGasKg_ano = generacionVapor * horasOperacion * consumoGasKg_tonv;
+            const consumoGasM3_ano = generacionVapor * horasOperacion * consumoGasM3_tonv;
+
+            // Costos Gas (Factor 27.05)
+            const costoGasCLP_m3 = (tarifaGas / 27.05) * tasaCambio;
+            const costoGasUSD_tonv = (generacionVapor * horasOperacion > 0) 
+                ? ((consumoGasM3_ano / 27.05 * tarifaGas) / (horasOperacion * generacionVapor)) 
+                : 0;
+
+            // Emisiones e Impuestos Gas
+            const emisionesCO2_ano = (consumoGasKg_ano / 1000) * factorEmisionCO2;
+            const emisionMP = (consumoGasM3_ano / 1000 * 0.12) / 1000;
+            const emisionNOx = (consumoGasM3_ano / 1000 * 1.6) / 1000;
+            const emisionSOx = (consumoGasM3_ano / 1000 * 0.0096) / 1000;
+
+            const tasaMP = 0.1 * 0.9 * poblacionCoronel;
+            const tasaNOx = 0.1 * 0.025 * poblacionCoronel;
+            const tasaSO2 = 0.1 * 0.01 * poblacionCoronel;
+
+            // Exención 25.000 ton CO2/año
+            const impuestoCO2_ano = (emisionesCO2_ano < 25000) ? 0 : (emisionesCO2_ano * tasaImpuestoVerde);
+            const impuestoLocales_ano = (emisionesCO2_ano < 25000) ? 0 : ((tasaMP * emisionMP) + (tasaNOx * emisionNOx) + (tasaSO2 * emisionSOx));
+
+            const costoTotalVaporGasBase = opexFijoGasTotal + costoGasUSD_tonv;
+            const impuestoGas_per_tonv = (vaporAnualTotal > 0) ? ((impuestoCO2_ano + impuestoLocales_ano) / vaporAnualTotal) : 0;
+            const costoTotalVaporGasConImpuestos = costoTotalVaporGasBase + impuestoGas_per_tonv;
+
+
+            // --- 2. CÁLCULOS CALDERA A BIOMASA ---
+            const precioBiomasaPesos = parseFloat(document.getElementById('precioBiomasaPesos').value) || 8500;
+            const especificoBiomasa = parseFloat(document.getElementById('especificoBiomasa').value) || 1.30;
+
+            // Biomasa Tissue = (Precio biomasa * Específico biomasa) / Tasa cambio
+            const biomasaTissue_L8 = (tasaCambio > 0) ? ((precioBiomasaPesos * especificoBiomasa) / tasaCambio) : 0;
+
+            // OPEX Fijo Biomasa
+            const manoObraBio = parseFloat(document.getElementById('manoObraBio').value) || 6.23;
+            const gastosFabricaBio = parseFloat(document.getElementById('gastosFabricaBio').value) || 3.91;
+            const energiaBio = parseFloat(document.getElementById('energiaBio').value) || 1.85;
+            const repuestosBio = parseFloat(document.getElementById('repuestosBio').value) || 0.77;
+            const quimicosBio = parseFloat(document.getElementById('quimicosBio').value) || 0.26;
+            const dieselCargadorBio = parseFloat(document.getElementById('dieselCargadorBio').value) || 0.36;
+            const disposicionCenizaBio = parseFloat(document.getElementById('disposicionCenizaBio').value) || 0.27;
+
+            // Costo Total del vapor Biomasa Operacional
+            const opexFijoBioTotal = manoObraBio + gastosFabricaBio + energiaBio + repuestosBio + quimicosBio + dieselCargadorBio + disposicionCenizaBio;
+            const costoTotalVaporBioL16 = biomasaTissue_L8 + opexFijoBioTotal;
+
+            // Impuesto Verde (US$/año)
+            const impuestoVerdeEscenario1 = parseFloat(document.getElementById('impuestoVerdeEscenario1').value) || 140000;
+            const impuestoEsc1_per_tonv = (vaporAnualTotal > 0) ? (impuestoVerdeEscenario1 / vaporAnualTotal) : 0;
+
+            // Costo Total Biomasa + Impuesto Verde
+            const costoTotalBiomasaEscenario1_L17 = costoTotalVaporBioL16 + impuestoEsc1_per_tonv;
+
+
+            // --- 3. PUNTO DE EQUILIBRIO DE INDIFERENCIA ---
+            const maxBioUSD_fuel = Math.max(0, costoTotalVaporGasConImpuestos - opexFijoBioTotal - impuestoEsc1_per_tonv);
+            const maxBioCLP_m3 = (especificoBiomasa > 0) ? ((maxBioUSD_fuel / especificoBiomasa) * tasaCambio) : 0;
+
+            const minGasUSD_fuel = Math.max(0, costoTotalBiomasaEscenario1_L17 - opexFijoGasTotal - impuestoGas_per_tonv);
+            const minGasTariff_USD = (consumoGasM3_tonv > 0) ? ((minGasUSD_fuel * 27.05) / consumoGasM3_tonv) : 0;
+            const minGasCLP_m3 = (minGasTariff_USD / 27.05) * tasaCambio;
+
+
+            // --- 4. ACTUALIZAR DOM ---
+
+            // GAS DOM
+            document.getElementById('calc-costo-gas-clp').innerText = costoGasCLP_m3.toLocaleString('es-CL', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+            document.getElementById('calc-emisiones-co2').innerText = Math.round(emisionesCO2_ano).toLocaleString('es-CL');
+            document.getElementById('calc-impuesto-co2-anual').innerText = (impuestoCO2_ano > 0) ? `$${Math.round(impuestoCO2_ano).toLocaleString('en-US')}` : '-';
+            document.getElementById('calc-impuesto-locales-anual').innerText = (impuestoLocales_ano > 0) ? `$${Math.round(impuestoLocales_ano).toLocaleString('en-US')}` : '-';
+
+            document.getElementById('calc-tasas-locales-summary').innerText = `${Math.round(tasaMP).toLocaleString('es-CL')} / ${Math.round(tasaNOx).toLocaleString('es-CL')} / ${Math.round(tasaSO2).toLocaleString('es-CL')}`;
+            document.getElementById('calc-emisiones-locales-summary').innerText = `${emisionMP.toFixed(2).replace('.', ',')} / ${emisionNOx.toFixed(2).replace('.', ',')} / ${emisionSOx.toFixed(2).replace('.', ',')}`;
+
+            document.getElementById('calc-costo-gas-usd-tonv').innerText = costoGasUSD_tonv.toFixed(2).replace('.', ',');
+            document.getElementById('calc-consumo-gas-kg-tonv').innerText = consumoGasKg_tonv.toFixed(1).replace('.', ',');
+            document.getElementById('calc-consumo-gas-kg-ano').innerText = Math.round(consumoGasKg_ano).toLocaleString('es-CL');
+            document.getElementById('calc-consumo-gas-m3-ano').innerText = Math.round(consumoGasM3_ano).toLocaleString('es-CL');
+
+            document.getElementById('calc-costo-total-vapor-gas').innerText = costoTotalVaporGasBase.toFixed(2).replace('.', ',');
+            document.getElementById('calc-impuesto-gas-por-tonv').innerText = impuestoGas_per_tonv.toFixed(2).replace('.', ',');
+            document.getElementById('calc-costo-total-impuestos-gas').innerText = costoTotalVaporGasConImpuestos.toFixed(2).replace('.', ',');
+
+            // Tax status badge update
+            const badge = document.getElementById('tax-status-badge');
+            if (emisionesCO2_ano < 25000) {
+                badge.innerText = `Exento de Impuesto Verde (${Math.round(emisionesCO2_ano).toLocaleString('es-CL')} < 25.000 t CO₂/año)`;
+                badge.className = "text-[10px] px-2.5 py-1 rounded-full font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300";
+            } else {
+                badge.innerText = `Afecto a Impuesto Verde (${Math.round(emisionesCO2_ano).toLocaleString('es-CL')} ≥ 25.000 t CO₂/año)`;
+                badge.className = "text-[10px] px-2.5 py-1 rounded-full font-bold bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300";
+            }
+
+            // BIOMASA DOM
+            document.getElementById('calc-biomasa-tissue-l8').innerText = biomasaTissue_L8.toFixed(2).replace('.', ',');
+            document.getElementById('calc-costo-total-bio-l16').innerText = costoTotalVaporBioL16.toFixed(2).replace('.', ',');
+            document.getElementById('calc-impuesto-esc1-por-tonv').innerText = impuestoEsc1_per_tonv.toFixed(2).replace('.', ',');
+            document.getElementById('calc-costo-total-esc1-bio-l17').innerText = costoTotalBiomasaEscenario1_L17.toFixed(2).replace('.', ',');
+
+            // --- 5. KPIS Y RESUMEN COMPARATIVO ---
+            const diffPorTon = Math.abs(costoTotalVaporGasConImpuestos - costoTotalBiomasaEscenario1_L17);
+            const diffAnual = diffPorTon * vaporAnualTotal;
+            const isGasWinner = costoTotalVaporGasConImpuestos < costoTotalBiomasaEscenario1_L17;
+
+            const winnerName = isGasWinner ? "GAS NATURAL" : "BIOMASA INDUSTRIAL";
+            const winnerElem = document.getElementById('kpi-winner-name');
+            winnerElem.innerText = winnerName;
+            winnerElem.className = `text-xl font-extrabold mt-1 ${isGasWinner ? 'text-blue-600 dark:text-blue-400' : 'text-emerald-600 dark:text-emerald-400'}`;
+
+            document.getElementById('kpi-winner-diff').innerText = `Ventaja de $${diffPorTon.toFixed(2)} US$/ton (${((diffPorTon / Math.max(costoTotalVaporGasConImpuestos, costoTotalBiomasaEscenario1_L17, 0.01)) * 100).toFixed(1)}% menor costo)`;
+            document.getElementById('kpi-annual-savings').innerText = `$${Math.round(diffAnual).toLocaleString('en-US')} USD`;
+            document.getElementById('kpi-vol-label').innerText = Math.round(vaporAnualTotal).toLocaleString('es-CL');
+
+            document.getElementById('kpi-cost-gas').innerHTML = `$${costoTotalVaporGasConImpuestos.toFixed(2)} <span class="text-xs font-normal text-gray-500">US$/ton</span>`;
+            document.getElementById('kpi-gas-sub-detail').innerText = `Base: $${costoTotalVaporGasBase.toFixed(2)} | Impuestos: $${impuestoGas_per_tonv.toFixed(2)}`;
+
+            document.getElementById('kpi-cost-bio').innerHTML = `$${costoTotalBiomasaEscenario1_L17.toFixed(2)} <span class="text-xs font-normal text-gray-500">US$/ton</span>`;
+            document.getElementById('kpi-bio-sub-detail').innerText = `Operación: $${costoTotalVaporBioL16.toFixed(2)} | Impuesto: $${impuestoEsc1_per_tonv.toFixed(2)}`;
+
+            // Bars
+            const maxVal = Math.max(costoTotalVaporGasConImpuestos, costoTotalBiomasaEscenario1_L17, 1);
+            document.getElementById('bar-gas-total-text').innerText = `$${costoTotalVaporGasConImpuestos.toFixed(2)} US$/ton`;
+            document.getElementById('bar-gas-fuel').style.width = `${Math.min(100, (costoGasUSD_tonv / maxVal) * 100)}%`;
+            document.getElementById('bar-gas-fuel').innerText = `$${costoGasUSD_tonv.toFixed(2)}`;
+            document.getElementById('bar-gas-fixed').style.width = `${Math.min(100, (opexFijoGasTotal / maxVal) * 100)}%`;
+            document.getElementById('bar-gas-fixed').innerText = `$${opexFijoGasTotal.toFixed(2)}`;
+            document.getElementById('bar-gas-tax').style.width = `${Math.min(100, (impuestoGas_per_tonv / maxVal) * 100)}%`;
+            document.getElementById('bar-gas-tax').innerText = (impuestoGas_per_tonv > 0.2) ? `$${impuestoGas_per_tonv.toFixed(2)}` : '';
+
+            document.getElementById('bar-bio-total-text').innerText = `$${costoTotalBiomasaEscenario1_L17.toFixed(2)} US$/ton`;
+            document.getElementById('bar-bio-fuel').style.width = `${Math.min(100, (biomasaTissue_L8 / maxVal) * 100)}%`;
+            document.getElementById('bar-bio-fuel').innerText = `$${biomasaTissue_L8.toFixed(2)}`;
+            document.getElementById('bar-bio-fixed').style.width = `${Math.min(100, (opexFijoBioTotal / maxVal) * 100)}%`;
+            document.getElementById('bar-bio-fixed').innerText = `$${opexFijoBioTotal.toFixed(2)}`;
+            document.getElementById('bar-bio-tax').style.width = `${Math.min(100, (impuestoEsc1_per_tonv / maxVal) * 100)}%`;
+            document.getElementById('bar-bio-tax').innerText = (impuestoEsc1_per_tonv > 0.1) ? `$${impuestoEsc1_per_tonv.toFixed(2)}` : '';
+
+            // Break-even Cards & Status Texts
+            document.getElementById('be-bio-price').innerText = `$${Math.round(maxBioCLP_m3).toLocaleString('es-CL')} CLP/m³`;
+            document.getElementById('be-gas-price').innerText = `$${minGasCLP_m3.toFixed(2).replace('.', ',')} CLP/m³ (${minGasTariff_USD.toFixed(2)} USD)`;
+
+            const bioDiffCLP = maxBioCLP_m3 - precioBiomasaPesos;
+            document.getElementById('be-bio-status-text').innerText = (bioDiffCLP >= 0) 
+                ? ` Biomasa actual ($${precioBiomasaPesos.toLocaleString('es-CL')} CLP) está $${Math.round(bioDiffCLP).toLocaleString('es-CL')} CLP/m³ por debajo del punto de corte (CONVENIENTE).`
+                : ` Biomasa actual supera en $${Math.round(Math.abs(bioDiffCLP)).toLocaleString('es-CL')} CLP/m³ el límite máximo (DESFAVORABLE).`;
+
+            const gasDiffUSD = tarifaGas - minGasTariff_USD;
+            document.getElementById('be-gas-status-text').innerText = (gasDiffUSD >= 0)
+                ? ` Tarifa actual de gas ($${tarifaGas.toFixed(2)} USD) supera el piso de indiferencia ($${minGasTariff_USD.toFixed(2)} USD) en $${gasDiffUSD.toFixed(2)} USD (Biomasa es más rentable).`
+                : ` Gas actual ($${tarifaGas.toFixed(2)} USD) está $${Math.abs(gasDiffUSD).toFixed(2)} USD por debajo del punto de corte (Gas es más conveniente).`;
+
+            const badgeIndifference = document.getElementById('indifference-summary-badge');
+            if (isGasWinner) {
+                badgeIndifference.innerText = `🔵 Zona Gas Natural: Tarifa actual $${tarifaGas.toFixed(2)} USD vs Piso Inflexión $${minGasTariff_USD.toFixed(2)} USD`;
+                badgeIndifference.className = "text-xs px-3 py-1.5 rounded-xl font-bold bg-blue-100 text-blue-900 dark:bg-blue-950 dark:text-blue-200 border border-blue-300 dark:border-blue-800";
+            } else {
+                badgeIndifference.innerText = `🟢 Zona Biomasa: Precio actual $${precioBiomasaPesos.toLocaleString('es-CL')} CLP vs Límite Inflexión $${Math.round(maxBioCLP_m3).toLocaleString('es-CL')} CLP`;
+                badgeIndifference.className = "text-xs px-3 py-1.5 rounded-xl font-bold bg-emerald-100 text-emerald-900 dark:bg-emerald-950 dark:text-emerald-200 border border-emerald-300 dark:border-emerald-800";
+            }
+
+            // RENDER CHARTS (DASHBOARD & INFORME EJECUTIVO ENESA)
+            renderBiomassSensitivityChart('chart-biomass-sensitivity', maxBioCLP_m3, precioBiomasaPesos, costoTotalVaporGasConImpuestos, opexFijoBioTotal, impuestoEsc1_per_tonv, especificoBiomasa, tasaCambio, costoTotalBiomasaEscenario1_L17);
+            renderBiomassSensitivityChart('report-chart-biomass', maxBioCLP_m3, precioBiomasaPesos, costoTotalVaporGasConImpuestos, opexFijoBioTotal, impuestoEsc1_per_tonv, especificoBiomasa, tasaCambio, costoTotalBiomasaEscenario1_L17);
+
+            renderGasSensitivityChart('chart-gas-sensitivity', minGasTariff_USD, minGasCLP_m3, tarifaGas, costoTotalVaporGasConImpuestos, opexFijoGasTotal, impuestoGas_per_tonv, consumoGasM3_tonv, costoTotalBiomasaEscenario1_L17);
+            renderGasSensitivityChart('report-chart-gas', minGasTariff_USD, minGasCLP_m3, tarifaGas, costoTotalVaporGasConImpuestos, opexFijoGasTotal, impuestoGas_per_tonv, consumoGasM3_tonv, costoTotalBiomasaEscenario1_L17);
+
+            // ACTUALIZAR INFORME EJECUTIVO NARRATIVO Y MATRIZ (EXACTO A IMAGEN 1 Y 2)
+            const emisionCO2_por_hora = (generacionVapor * consumoGasKg_tonv / 1000) * factorEmisionCO2;
+            const maxHorasExentoGas = (emisionCO2_por_hora > 0) ? Math.floor(25000 / emisionCO2_por_hora) : 0;
+
+            const consumoGasM3_hora = generacionVapor * consumoGasM3_tonv;
+            const consumoGasM3_dia = consumoGasM3_hora * 24;
+
+            const consumoBioM3_hora = generacionVapor * especificoBiomasa;
+            const consumoBioM3_dia = consumoBioM3_hora * 24;
+            const consumoBioM3_ano = consumoBioM3_hora * horasOperacion;
+
+            document.getElementById('rep-gas-cons').innerText = `${consumoGasKg_tonv.toFixed(1)} kg/tonv (${consumoGasM3_tonv.toFixed(1)} m³/tonv)`;
+            document.getElementById('rep-bio-cons').innerText = `${especificoBiomasa.toFixed(2)} m³st/tonv`;
+
+            const elemGasFlows = document.getElementById('rep-gas-flows');
+            if (elemGasFlows) {
+                elemGasFlows.innerText = `${Math.round(consumoGasM3_hora).toLocaleString('es-CL')} m³/h | ${Math.round(consumoGasM3_dia).toLocaleString('es-CL')} m³/día | ${Math.round(consumoGasM3_ano).toLocaleString('es-CL')} m³/año`;
+            }
+            const elemBioFlows = document.getElementById('rep-bio-flows');
+            if (elemBioFlows) {
+                elemBioFlows.innerText = `${consumoBioM3_hora.toFixed(1).replace('.', ',')} m³st/h | ${Math.round(consumoBioM3_dia).toLocaleString('es-CL')} m³st/día | ${Math.round(consumoBioM3_ano).toLocaleString('es-CL')} m³st/año`;
+            }
+
+            document.getElementById('rep-gas-fuel-cost').innerText = `$${costoGasUSD_tonv.toFixed(2)} US$/tonv`;
+            document.getElementById('rep-bio-fuel-cost').innerText = `$${biomasaTissue_L8.toFixed(2)} US$/tonv`;
+
+            document.getElementById('rep-gas-fixed').innerText = `$${opexFijoGasTotal.toFixed(2)} US$/tonv`;
+            document.getElementById('rep-bio-fixed').innerText = `$${opexFijoBioTotal.toFixed(2)} US$/tonv`;
+
+            document.getElementById('rep-gas-tax').innerText = `$${impuestoGas_per_tonv.toFixed(2)} US$/tonv`;
+            document.getElementById('rep-bio-tax').innerText = `$${impuestoEsc1_per_tonv.toFixed(2)} US$/tonv`;
+
+            const elemMaxHours = document.getElementById('rep-gas-max-hours');
+            if (elemMaxHours) {
+                elemMaxHours.innerText = `${maxHorasExentoGas.toLocaleString('es-CL')} h/año`;
+            }
+
+            document.getElementById('rep-gas-total').innerText = `$${costoTotalVaporGasConImpuestos.toFixed(2)} US$/tonv`;
+            document.getElementById('rep-bio-total').innerText = `$${costoTotalBiomasaEscenario1_L17.toFixed(2)} US$/tonv`;
+
+            const execNarrative = `
+                <p>El presente informe técnico-económico elaborado para <strong>Enesa</strong> analiza la competitividad entre la producción de vapor mediante <strong>Gas Natural</strong> y <strong>Biomasa Industrial</strong> para una demanda operativa de <strong>${generacionVapor} ton/h</strong> (${Math.round(vaporAnualTotal).toLocaleString('es-CL')} ton/año en ${horasOperacion.toLocaleString('es-CL')} h/año) a una tasa de cambio de <strong>${tasaCambio} CLP/USD</strong>. Bajo las condiciones operativas actuales (Tarifa Gas: $${tarifaGas.toFixed(2)} USD/MMBtu | Precio Biomasa: $${precioBiomasaPesos.toLocaleString('es-CL')} CLP/m³):</p>
+                <ul class="list-disc pl-5 space-y-0.5 font-semibold text-gray-800 dark:text-gray-200">
+                    <li>El costo unitario total del vapor con <strong>Biomasa</strong> resulta en <strong>$${costoTotalBiomasaEscenario1_L17.toFixed(2)} US$/tonv</strong> (incluyendo $${impuestoEsc1_per_tonv.toFixed(2)} US$/tonv de Impuesto Verde).</li>
+                    <li>El costo unitario total del vapor con <strong>Gas Natural</strong> se sitúa en <strong>$${costoTotalVaporGasConImpuestos.toFixed(2)} US$/tonv</strong> (incluyendo $${impuestoGas_per_tonv.toFixed(2)} US$/tonv de Proporción Impuesto Verde normativo).</li>
+                    <li><strong>Consumo Volumétrico de Gas Natural (${horasOperacion.toLocaleString('es-CL')} h/año):</strong> Caudal horario de <strong>${Math.round(consumoGasM3_hora).toLocaleString('es-CL')} m³/h</strong>, consumo diario de <strong>${Math.round(consumoGasM3_dia).toLocaleString('es-CL')} m³/día</strong> y consumo por periodo anual de <strong>${Math.round(consumoGasM3_ano).toLocaleString('es-CL')} m³/año</strong>.</li>
+                    <li>La tecnología óptima corresponde a <strong>${winnerName}</strong>, generando un ahorro directo anual estimado en <strong>$${Math.round(diffAnual).toLocaleString('en-US')} USD/año</strong>.</li>
+                    <li class="text-amber-800 dark:text-amber-300"><strong>Límite de Operación Exenta de Impuesto Verde (Gas Natural):</strong> Para no pagar Impuesto Verde por emisiones (&lt; 25.000 ton CO₂/año), la caldera a gas podría operar un máximo de <strong>${maxHorasExentoGas.toLocaleString('es-CL')} horas/año</strong> (~${(maxHorasExentoGas / 24).toFixed(0)} días continuos al año a ${generacionVapor} ton/h).</li>
+                    <li class="text-blue-800 dark:text-blue-300"><strong>Consideración de Mano de Obra (Gas Natural):</strong> No se considera costo adicional por mano de obra ($0,00 US$/tonv) ya que está implícito en la planta por la operación de las otras calderas.</li>
+                </ul>
+            `;
+            document.getElementById('executive-narrative').innerHTML = execNarrative;
+
+            const recText = isGasWinner 
+                ? `Se recomienda mantener o seleccionar la opción de <strong>Gas Natural</strong>. Para que la biomasa vuelva a ser competitiva, su precio en mercado debería reducirse por debajo de <strong>$${Math.round(maxBioCLP_m3).toLocaleString('es-CL')} CLP/m³</strong>.`
+                : `Se recomienda la adopción de <strong>Biomasa Industrial</strong>. La tecnología presenta un diferencial favorable de <strong>$${diffPorTon.toFixed(2)} US$/tonv</strong>. El límite máximo de costo de biomasa para mantener competitividad es de <strong>$${Math.round(maxBioCLP_m3).toLocaleString('es-CL')} CLP/m³</strong>, mientras que el piso tarifario del Gas Natural requeriría bajar a <strong>$${minGasTariff_USD.toFixed(2)} US$/MMBtu</strong> para igualar costos.`;
+            
+            document.getElementById('rep-recommendation-text').innerHTML = recText;
+
+            // AI System Prompt
+            const promptText = `Eres un agente experto en evaluación de proyectos térmicos e ingeniería energética para Enesa.
+
+Simulación activa (Modo Consumo Gas m³/tonv: ${isManualM3 ? 'Manual' : 'Automático'} = ${consumoGasM3_tonv.toFixed(1)} m³/tonv):
+- Empresa: Enesa | Tasa Cambio: ${tasaCambio} CLP/USD | Generación Vapor: ${generacionVapor} tonv/h @ ${horasOperacion} h/año (${Math.round(vaporAnualTotal).toLocaleString('es-CL')} tonv/año)
+- Caldera a Gas Natural:
+  * Consumo Específico: ${consumoGasKg_tonv.toFixed(1)} kg/tonv (${consumoGasM3_tonv.toFixed(1)} m³/tonv) [${isManualM3 ? 'Ingreso Manual m³' : 'Cálculo Automático'}]
+  * Costo Gas: ${costoGasCLP_m3.toFixed(2)} CLP/m³ -> ${costoGasUSD_tonv.toFixed(2)} US$/tonv
+  * Emisiones CO₂: ${Math.round(emisionesCO2_ano).toLocaleString('es-CL')} ton CO₂/año (${emisionesCO2_ano < 25000 ? 'Exento de impuesto' : 'Afecto a impuesto'})
+  * Impuesto por CO₂: $${Math.round(impuestoCO2_ano).toLocaleString('en-US')} USD/año | Impuesto Local: $${Math.round(impuestoLocales_ano).toLocaleString('en-US')} USD/año
+  * Costo Total Vapor Gas (Sin Impuestos): $${costoTotalVaporGasBase.toFixed(2)} US$/tonv
+  * Proporción Impuesto Verde: $${impuestoGas_per_tonv.toFixed(2)} US$/tonv
+  * Costo Total Vapor Gas (Con Impuestos): $${costoTotalVaporGasConImpuestos.toFixed(2)} US$/tonv
+
+- Caldera a Biomasa:
+  * Biomasa Tissue: $${biomasaTissue_L8.toFixed(2)} US$/tonv
+  * OPEX Fijo Operacional: $${opexFijoBioTotal.toFixed(2)} US$/tonv
+  * Costo Total vapor Biomasa Operacional: $${costoTotalVaporBioL16.toFixed(2)} US$/tonv
+  * Impuesto Verde: $${impuestoVerdeEscenario1.toLocaleString('en-US')} USD/año ($${impuestoEsc1_per_tonv.toFixed(2)} US$/tonv)
+  * Costo Total Biomasa + Impuesto Verde (KPI Final): $${costoTotalBiomasaEscenario1_L17.toFixed(2)} US$/tonv
+
+- Análisis de Equilibrio e Inflexión:
+  * Precio Máximo Biomasa Indiferente: $${Math.round(maxBioCLP_m3).toLocaleString('es-CL')} CLP/m³
+  * Precio Mínimo Gas Indiferente: $${minGasCLP_m3.toFixed(2)} CLP/m³ ($${minGasTariff_USD.toFixed(2)} US$/MMBtu)
+  * Matriz Recomendada Enesa: ${winnerName} (Diferencial Anual: $${Math.round(diffAnual).toLocaleString('en-US')} USD/año).`;
+
+            document.getElementById('system-prompt-text').innerText = promptText;
+
+            // SAVE STATE TO LOCALSTORAGE ON EVERY CALCULATION
+            saveState();
+        }
+
+        // --- POPUP FORMULA MODAL SYSTEM ---
+        function showFormulaModal(key) {
+            const modal = document.getElementById('formula-modal');
+            const titleElem = document.getElementById('modal-variable-name');
+            const badgeElem = document.getElementById('modal-variable-badge');
+            const bodyElem = document.getElementById('modal-body-content');
+
+            // Current inputs for live math evaluation
+            const tasaCambio = parseFloat(document.getElementById('tasaCambio').value) || 950;
+            const generacionVapor = parseFloat(document.getElementById('generacionVapor').value) || 20;
+            const horasOperacion = parseFloat(document.getElementById('horasOperacion').value) || 8640;
+            const tempAguaAlim = parseFloat(document.getElementById('tempAguaAlim').value) || 110;
+            const entalpiaVapor = parseFloat(document.getElementById('entalpiaVapor').value) || 670;
+            const tarifaGas = parseFloat(document.getElementById('tarifaGas').value) || 8.20;
+            const eficiencia = (parseFloat(document.getElementById('eficiencia').value) || 95) / 100;
+            const pciGas = parseFloat(document.getElementById('pciGas').value) || 8300;
+            const densidadGas = parseFloat(document.getElementById('densidadGas').value) || 0.76;
+            const factorEmisionCO2 = parseFloat(document.getElementById('factorEmisionCO2').value) || 2.75;
+            const tasaImpuestoVerde = parseFloat(document.getElementById('tasaImpuestoVerde').value) || 5.00;
+            const poblacionCoronel = parseFloat(document.getElementById('poblacionCoronel').value) || 128000;
+
+            const isManualM3 = document.getElementById('toggleManualM3').checked;
+            const inputM3Val = parseFloat(document.getElementById('inputConsumoGasM3').value) || 93.1;
+
+            const consumoGasKg_tonv = (pciGas * eficiencia > 0) ? (((entalpiaVapor - tempAguaAlim) * 1000) / (eficiencia * pciGas)) : 0;
+            const consumoGasM3_tonv = isManualM3 ? inputM3Val : (densidadGas > 0 ? (consumoGasKg_tonv / densidadGas) : 0);
+
+            const consumoGasKg_ano = generacionVapor * horasOperacion * consumoGasKg_tonv;
+            const consumoGasM3_ano = generacionVapor * horasOperacion * consumoGasM3_tonv;
+
+            const costoGasCLP_m3 = (tarifaGas / 27.05) * tasaCambio;
+            const costoGasUSD_tonv = (consumoGasM3_tonv / 27.05) * tarifaGas;
+
+            const emisionesCO2_ano = (consumoGasKg_ano / 1000) * factorEmisionCO2;
+            const emisionMP = (consumoGasM3_ano / 1000 * 0.12) / 1000;
+            const emisionNOx = (consumoGasM3_ano / 1000 * 1.6) / 1000;
+            const emisionSOx = (consumoGasM3_ano / 1000 * 0.0096) / 1000;
+
+            const tasaMP = 0.1 * 0.9 * poblacionCoronel;
+            const tasaNOx = 0.1 * 0.025 * poblacionCoronel;
+            const tasaSO2 = 0.1 * 0.01 * poblacionCoronel;
+
+            const impuestoCO2_ano = (emisionesCO2_ano < 25000) ? 0 : (emisionesCO2_ano * tasaImpuestoVerde);
+            const impuestoLocales_ano = (emisionesCO2_ano < 25000) ? 0 : ((tasaMP * emisionMP) + (tasaNOx * emisionNOx) + (tasaSO2 * emisionSO2));
+
+            const opexFijoGasTotal = 1.01 + 1.00 + 0.50 + 0.26;
+            const costoTotalVaporGasBase = opexFijoGasTotal + costoGasUSD_tonv;
+            const vaporAnualTotal = generacionVapor * horasOperacion;
+            const impuestoGas_per_tonv = (vaporAnualTotal > 0) ? ((impuestoCO2_ano + impuestoLocales_ano) / vaporAnualTotal) : 0;
+            const costoTotalVaporGasConImpuestos = costoTotalVaporGasBase + impuestoGas_per_tonv;
+
+            // Biomass Variables
+            const precioBiomasaPesos = parseFloat(document.getElementById('precioBiomasaPesos').value) || 8500;
+            const especificoBiomasa = parseFloat(document.getElementById('especificoBiomasa').value) || 1.30;
+            const biomasaTissue_L8 = (tasaCambio > 0) ? ((precioBiomasaPesos * especificoBiomasa) / tasaCambio) : 0;
+            const opexFijoBioTotal = 6.23 + 3.91 + 1.85 + 0.77 + 0.26 + 0.36 + 0.27;
+            const costoTotalVaporBioL16 = biomasaTissue_L8 + opexFijoBioTotal;
+            const impuestoVerdeEscenario1 = parseFloat(document.getElementById('impuestoVerdeEscenario1').value) || 140000;
+            const impuestoEsc1_per_tonv = (vaporAnualTotal > 0) ? (impuestoVerdeEscenario1 / vaporAnualTotal) : 0;
+            const costoTotalBiomasaEscenario1_L17 = costoTotalVaporBioL16 + impuestoEsc1_per_tonv;
+
+            let name = "";
+            let badge = "Fórmula y Evaluación en Vivo";
+            let html = "";
+
+            switch(key) {
+                case 'costo_gas_clp':
+                    name = "Costo del Gas Natural ($/m³ CLP)";
+                    badge = "Fórmula Excel: =(D34 / 27.05 * D7 * D3) / D34";
+                    html = `
+                        <p><strong>Descripción:</strong> Convierte la tarifa de gas (US$/MMBtu) a CLP por metro cúbico utilizando el factor de conversión constante <strong>27.05 MMBtu/m³</strong> y la tasa de cambio.</p>
+                        <div class="p-3 bg-gray-100 dark:bg-gray-800 rounded-xl font-mono text-indigo-600 dark:text-indigo-400 border">
+                            Fórmula Simplificada: (Tarifa / 27.05) &times; Tasa_de_cambio
+                        </div>
+                        <div class="p-3 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 rounded-xl space-y-1">
+                            <div class="font-bold text-amber-900 dark:text-amber-200">Sustitución con valores actuales:</div>
+                            <div>= (${tarifaGas.toFixed(2)} US$/MMBtu / 27.05) &times; ${tasaCambio} CLP/USD</div>
+                            <div class="text-base font-extrabold text-amber-700 dark:text-amber-300 border-t pt-1 mt-1">
+                                = ${costoGasCLP_m3.toFixed(2)} CLP/m³
+                            </div>
+                        </div>
+                    `;
+                    break;
+
+                case 'emisiones_co2':
+                    name = "Emisiones Anuales de CO₂ (ton/año)";
+                    badge = "Fórmula Excel: =(D33 / 1000) * D11";
+                    html = `
+                        <p><strong>Descripción:</strong> Convierte el consumo anual de gas de kg a toneladas y lo multiplica por el factor de emisión de CO₂ (${factorEmisionCO2} kg CO₂/kg GN).</p>
+                        <div class="p-3 bg-gray-100 dark:bg-gray-800 rounded-xl font-mono text-indigo-600 dark:text-indigo-400 border">
+                            Fórmula: (Consumo_gas_kg_año / 1000) &times; Factor_emisión_CO2
+                        </div>
+                        <div class="p-3 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 rounded-xl space-y-1">
+                            <div class="font-bold text-amber-900 dark:text-amber-200">Sustitución con valores actuales:</div>
+                            <div>= (${Math.round(consumoGasKg_ano).toLocaleString('es-CL')} kg / 1000) &times; ${factorEmisionCO2}</div>
+                            <div class="text-base font-extrabold text-amber-700 dark:text-amber-300 border-t pt-1 mt-1">
+                                = ${Math.round(emisionesCO2_ano).toLocaleString('es-CL')} ton CO₂/año
+                            </div>
+                        </div>
+                    `;
+                    break;
+
+                case 'impuesto_co2':
+                    name = "Impuesto Verde por CO₂ (US$/año)";
+                    badge = "Fórmula Excel: =IF(D13 < 25000, 0, D13 * D12)";
+                    html = `
+                        <p><strong>Descripción:</strong> Aplica la regla normativa de exención. Las fuentes que emiten menos de <strong>25.000 ton CO₂/año</strong> pagan $0. Si superan el umbral, se multiplica la masa emitida por la tasa ($${tasaImpuestoVerde} USD/t CO₂).</p>
+                        <div class="p-3 bg-gray-100 dark:bg-gray-800 rounded-xl font-mono text-indigo-600 dark:text-indigo-400 border">
+                            Fórmula: SI(Emisiones_CO2 < 25000; 0; Emisiones_CO2 &times; Tasa_impuesto_verde)
+                        </div>
+                        <div class="p-3 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 rounded-xl space-y-1">
+                            <div class="font-bold text-amber-900 dark:text-amber-200">Sustitución con valores actuales:</div>
+                            <div>Emisiones = ${Math.round(emisionesCO2_ano).toLocaleString('es-CL')} t CO₂ ${emisionesCO2_ano < 25000 ? '< 25.000 (Exento)' : '≥ 25.000 (Afecto)'}</div>
+                            <div>= ${emisionesCO2_ano < 25000 ? '$0 USD/año' : `${Math.round(emisionesCO2_ano).toLocaleString('es-CL')} t &times; $${tasaImpuestoVerde} USD/t`}</div>
+                            <div class="text-base font-extrabold text-amber-700 dark:text-amber-300 border-t pt-1 mt-1">
+                                = ${impuestoCO2_ano > 0 ? `$${Math.round(impuestoCO2_ano).toLocaleString('en-US')} USD/año` : '$0 USD/año (Exento)'}
+                            </div>
+                        </div>
+                    `;
+                    break;
+
+                case 'impuesto_locales':
+                    name = "Impuesto Local NOx, MP, SO₂ (US$/año)";
+                    badge = "Fórmula Excel: =IF(D13 < 25000, 0, (D16*D19) + (D17*D20) + (D21*D18))";
+                    html = `
+                        <p><strong>Descripción:</strong> Si se superan las 25.000 t CO₂/año, calcula el costo de contaminación local según la población de Coronel (${poblacionCoronel.toLocaleString('es-CL')} hab) y las toneladas anuales emitidas.</p>
+                        <div class="p-3 bg-gray-100 dark:bg-gray-800 rounded-xl font-mono text-indigo-600 dark:text-indigo-400 border">
+                            Fórmula: SI(Emisiones_CO2 < 25000; 0; (TasaMP &times; EmisiónMP) + (TasaNOx &times; EmisiónNOx) + (TasaSO2 &times; EmisiónSO2))
+                        </div>
+                        <div class="p-3 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 rounded-xl space-y-1">
+                            <div class="font-bold text-amber-900 dark:text-amber-200">Sustitución con valores actuales:</div>
+                            <div>MP: (${Math.round(tasaMP)} &times; ${emisionMP.toFixed(2)}) + NOx: (${Math.round(tasaNOx)} &times; ${emisionNOx.toFixed(2)}) + SO₂: (${Math.round(tasaSO2)} &times; ${emisionSOx.toFixed(2)})</div>
+                            <div class="text-base font-extrabold text-amber-700 dark:text-amber-300 border-t pt-1 mt-1">
+                                = ${impuestoLocales_ano > 0 ? `$${Math.round(impuestoLocales_ano).toLocaleString('en-US')} USD/año` : '$0 USD/año (Exento por umbral < 25k t)'}
+                            </div>
+                        </div>
+                    `;
+                    break;
+
+                case 'tasas_locales':
+                    name = "Tasas de Contaminantes Locales (Coronel)";
+                    badge = "Fórmulas: Tasa MP=0.1*0.9*Pob | Tasa NOx=0.1*0.025*Pob | Tasa SO2=0.1*0.01*Pob";
+                    html = `
+                        <p><strong>Descripción:</strong> Las tasas tributarias por tonelada de contaminante emitido se calculan proporcionalmente a la población afectada (${poblacionCoronel.toLocaleString('es-CL')} hab).</p>
+                        <ul class="list-disc pl-5 space-y-1 font-mono text-[11px]">
+                            <li>Tasa MP = 0.1 &times; 0.9 &times; ${poblacionCoronel} = <strong>$${Math.round(tasaMP).toLocaleString('es-CL')} USD/ton</strong></li>
+                            <li>Tasa NOx = 0.1 &times; 0.025 &times; ${poblacionCoronel} = <strong>$${Math.round(tasaNOx).toLocaleString('es-CL')} USD/ton</strong></li>
+                            <li>Tasa SO₂ = 0.1 &times; 0.01 &times; ${poblacionCoronel} = <strong>$${Math.round(tasaSO2).toLocaleString('es-CL')} USD/ton</strong></li>
+                        </ul>
+                    `;
+                    break;
+
+                case 'emisiones_locales':
+                    name = "Emisiones de Contaminantes Locales (ton/año)";
+                    badge = "Fórmulas: MP=(Vol/1000*0.12)/1000 | NOx=(Vol/1000*1.6)/1000 | SOx=(Vol/1000*0.0096)/1000";
+                    html = `
+                        <p><strong>Descripción:</strong> Masa anual emitida de contaminantes atmosféricos locales derivados del volumen total de gas procesado (${Math.round(consumoGasM3_ano).toLocaleString('es-CL')} m³/año).</p>
+                        <ul class="list-disc pl-5 space-y-1 font-mono text-[11px]">
+                            <li>Emisión MP = (${Math.round(consumoGasM3_ano).toLocaleString('es-CL')} / 1000 &times; 0.12) / 1000 = <strong>${emisionMP.toFixed(2)} ton/año</strong></li>
+                            <li>Emisión NOx = (${Math.round(consumoGasM3_ano).toLocaleString('es-CL')} / 1000 &times; 1.6) / 1000 = <strong>${emisionNOx.toFixed(2)} ton/año</strong></li>
+                            <li>Emisión SOx = (${Math.round(consumoGasM3_ano).toLocaleString('es-CL')} / 1000 &times; 0.0096) / 1000 = <strong>${emisionSOx.toFixed(2)} ton/año</strong></li>
+                        </ul>
+                    `;
+                    break;
+
+                case 'costo_gas_usd':
+                    name = "Costo del Gas Natural por Tonelada de Vapor (US$/tonv)";
+                    badge = "Fórmula Excel: =(D34 / 27.05 * D7) / (D29 * D28)";
+                    html = `
+                        <p><strong>Descripción:</strong> Costo específico del combustible gastado para producir una tonelada de vapor en la caldera a gas.</p>
+                        <div class="p-3 bg-gray-100 dark:bg-gray-800 rounded-xl font-mono text-indigo-600 dark:text-indigo-400 border">
+                            Fórmula Simplificada: (Consumo_gas_m3_tonv / 27.05) &times; Tarifa_gas
+                        </div>
+                        <div class="p-3 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 rounded-xl space-y-1">
+                            <div class="font-bold text-amber-900 dark:text-amber-200">Sustitución con valores actuales:</div>
+                            <div>= (${consumoGasM3_tonv.toFixed(1)} m³/tonv / 27.05) &times; $${tarifaGas.toFixed(2)} US$/MMBtu</div>
+                            <div class="text-base font-extrabold text-amber-700 dark:text-amber-300 border-t pt-1 mt-1">
+                                = ${costoGasUSD_tonv.toFixed(2)} US$/ton vapor
+                            </div>
+                        </div>
+                    `;
+                    break;
+
+                case 'consumo_gas_kg_tonv':
+                    name = "Consumo de Gas Específico (kg/tonv)";
+                    badge = "Fórmula Física: Consumo_m3_tonv * Densidad_gas";
+                    html = `
+                        <p><strong>Descripción:</strong> Masa de gas natural requerida por tonelada de vapor. Se obtiene multiplicando el volumen específico requerido en metros cúbicos (${consumoGasM3_tonv.toFixed(1)} m³/tonv) por la densidad del gas (${densidadGas} kg/Nm³).</p>
+                        <div class="p-3 bg-gray-100 dark:bg-gray-800 rounded-xl font-mono text-indigo-600 dark:text-indigo-400 border">
+                            Fórmula: Consumo_gas_m3_tonv &times; Densidad_gas
+                        </div>
+                        <div class="p-3 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 rounded-xl space-y-1">
+                            <div class="font-bold text-amber-900 dark:text-amber-200">Sustitución con valores actuales:</div>
+                            <div>= ${consumoGasM3_tonv.toFixed(1)} m³/tonv &times; ${densidadGas} kg/Nm³</div>
+                            <div class="text-base font-extrabold text-amber-700 dark:text-amber-300 border-t pt-1 mt-1">
+                                = ${consumoGasKg_tonv.toFixed(1)} kg/ton vapor
+                            </div>
+                        </div>
+                    `;
+                    break;
+
+                case 'consumo_gas_m3_tonv':
+                    name = "Consumo de Gas Específico (m³/tonv)";
+                    badge = isManualM3 ? "Modo Activo: Ingreso Manual Directo" : "Fórmula Termodinámica: ((Entalpía - TempAgua) * 1000) / (Eficiencia * PCI)";
+                    html = `
+                        <p><strong>Descripción:</strong> Volumen de gas natural por tonelada de vapor. Al estar el PCI expresado en kCal/m³, la división del calor requerido ($\Delta H \times 1000$) por el PCI útil ($\text{PCI} \times \text{Eficiencia}$) entrega directamente el volumen en <strong>m³/tonv</strong>.</p>
+                        <div class="p-3 bg-gray-100 dark:bg-gray-800 rounded-xl font-mono text-indigo-600 dark:text-indigo-400 border">
+                            Fórmula Termodinámica: ${isManualM3 ? 'Ingreso Manual Directo' : '((Entalpía_vapor - Temp_agua) &times; 1000) / (Eficiencia &times; PCI)'}
+                        </div>
+                        <div class="p-3 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 rounded-xl space-y-1">
+                            <div class="font-bold text-amber-900 dark:text-amber-200">Sustitución con valores actuales (${isManualM3 ? 'Manual' : 'Auto'}):</div>
+                            <div>${isManualM3 ? `Valor directo ingresado: ${consumoGasM3_tonv.toFixed(1)} m³/tonv (Masa en kg/tonv = ${consumoGasKg_tonv.toFixed(1)})` : `= ((${entalpiaVapor} - ${tempAguaAlim}) &times; 1000) / (${eficiencia} &times; ${pciGas}) = 560.000 / ${(pciGas * eficiencia).toLocaleString('es-CL')}`}</div>
+                            <div class="text-base font-extrabold text-amber-700 dark:text-amber-300 border-t pt-1 mt-1">
+                                = ${consumoGasM3_tonv.toFixed(1)} m³/ton vapor
+                            </div>
+                        </div>
+                    `;
+                    break;
+
+                case 'consumo_gas_anual':
+                    name = "Consumo Anual de Gas Natural (kg/año y m³/año)";
+                    badge = "Fórmulas Excel: D33=D28*D29*D31 | D34=D28*D29*D32";
+                    html = `
+                        <p><strong>Descripción:</strong> Volumen y masa total de combustible consumido al año al operar a ${generacionVapor} tonv/h durante ${horasOperacion} horas/año.</p>
+                        <div class="p-3 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 rounded-xl space-y-1">
+                            <div class="font-bold text-amber-900 dark:text-amber-200">Resultados en vivo:</div>
+                            <div>• Masa Anual = ${generacionVapor} &times; ${horasOperacion} &times; ${consumoGasKg_tonv.toFixed(1)} = <strong>${Math.round(consumoGasKg_ano).toLocaleString('es-CL')} kg/año</strong></div>
+                            <div>• Volumen Anual = ${generacionVapor} &times; ${horasOperacion} &times; ${consumoGasM3_tonv.toFixed(1)} = <strong>${Math.round(consumoGasM3_ano).toLocaleString('es-CL')} m³/año</strong></div>
+                        </div>
+                    `;
+                    break;
+
+                case 'costo_total_vapor_gas':
+                    name = "Costo Total Vapor Gas Natural (Sin Impuestos)";
+                    badge = "Fórmula Excel: =D23 + D24 + D25 + D26 + D27 + D30";
+                    html = `
+                        <p><strong>Descripción:</strong> Suma directa del costo del combustible gas natural por tonelada de vapor más los costos fijos de operación (Mano de obra, Mantenimiento, Energía, Repuestos y Químicos).</p>
+                        <div class="p-3 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 rounded-xl space-y-1">
+                            <div class="font-bold text-amber-900 dark:text-amber-200">Sustitución en vivo:</div>
+                            <div>= Combustible ($${costoGasUSD_tonv.toFixed(2)}) + OPEX Fijo ($${opexFijoGasTotal.toFixed(2)})</div>
+                            <div class="text-base font-extrabold text-amber-700 dark:text-amber-300 border-t pt-1 mt-1">
+                                = ${costoTotalVaporGasBase.toFixed(2)} US$/ton vapor
+                            </div>
+                        </div>
+                    `;
+                    break;
+
+                case 'proporcion_impuesto_verde_gas':
+                    name = "Proporción Impuesto Verde (US$/ton vapor)";
+                    badge = "Fórmula Excel: =(Impuesto_CO2 + Impuesto_Locales) / (Generación * Horas)";
+                    html = `
+                        <p><strong>Descripción:</strong> Prorratea el monto total anual de impuestos verdes normativos ($${Math.round(impuestoCO2_ano + impuestoLocales_ano).toLocaleString('en-US')} USD/año) entre la generación anual de vapor (${vaporAnualTotal.toLocaleString('es-CL')} tonv/año).</p>
+                        <div class="p-3 bg-gray-100 dark:bg-gray-800 rounded-xl font-mono text-indigo-600 dark:text-indigo-400 border">
+                            Fórmula: (Impuesto_CO2_anual + Impuesto_Locales_anual) / (Generación_vapor &times; Horas_operación)
+                        </div>
+                        <div class="p-3 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 rounded-xl space-y-1">
+                            <div class="font-bold text-amber-900 dark:text-amber-200">Sustitución con valores actuales:</div>
+                            <div>= ($${Math.round(impuestoCO2_ano).toLocaleString('en-US')} + $${Math.round(impuestoLocales_ano).toLocaleString('en-US')}) USD/año / (${generacionVapor} tonv/h &times; ${horasOperacion} h/año)</div>
+                            <div>= $${Math.round(impuestoCO2_ano + impuestoLocales_ano).toLocaleString('en-US')} USD / ${vaporAnualTotal.toLocaleString('es-CL')} tonv</div>
+                            <div class="text-base font-extrabold text-amber-700 dark:text-amber-300 border-t pt-1 mt-1">
+                                = ${impuestoGas_per_tonv.toFixed(2)} US$/ton vapor
+                            </div>
+                        </div>
+                    `;
+                    break;
+
+                case 'costo_total_impuestos_gas':
+                    name = "Costo Total Vapor Gas Natural + Impuestos (KPI Final)";
+                    badge = "Fórmula Excel: =D35 + ((D14 + D15) / (D28 * D29))";
+                    html = `
+                        <p><strong>Descripción:</strong> Incorpora la porción prorrateada de los impuestos verdes (CO₂ e impacto local) por tonelada de vapor sobre el costo operacional base.</p>
+                        <div class="p-3 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 rounded-xl space-y-1">
+                            <div class="font-bold text-amber-900 dark:text-amber-200">Sustitución en vivo:</div>
+                            <div>= Base ($${costoTotalVaporGasBase.toFixed(2)}) + Proporción Impuesto Verde ($${impuestoGas_per_tonv.toFixed(2)} US$/tonv)</div>
+                            <div class="text-base font-extrabold text-amber-700 dark:text-amber-300 border-t pt-1 mt-1">
+                                = ${costoTotalVaporGasConImpuestos.toFixed(2)} US$/ton vapor
+                            </div>
+                        </div>
+                    `;
+                    break;
+
+                case 'biomasa_tissue_l8':
+                    name = "Biomasa Tissue";
+                    badge = "Fórmula Excel: (Precio * Específico) / TasaCambio";
+                    html = `
+                        <p><strong>Descripción:</strong> Costo directo del combustible biomasa por tonelada de vapor producida expresado en US$.</p>
+                        <div class="p-3 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 rounded-xl space-y-1">
+                            <div class="font-bold text-amber-900 dark:text-amber-200">Sustitución en vivo:</div>
+                            <div>= (${precioBiomasaPesos.toLocaleString('es-CL')} CLP/m³ &times; ${especificoBiomasa} m³st/tonv) / ${tasaCambio} CLP/USD</div>
+                            <div class="text-base font-extrabold text-amber-700 dark:text-amber-300 border-t pt-1 mt-1">
+                                = ${biomasaTissue_L8.toFixed(2)} US$/ton vapor
+                            </div>
+                        </div>
+                    `;
+                    break;
+
+                case 'costo_total_bio_l16':
+                    name = "Costo Total vapor Biomasa Operacional";
+                    badge = "Fórmula Excel: Suma de Combustible + Costos Fijos";
+                    html = `
+                        <p><strong>Descripción:</strong> Suma del combustible biomasa más todos los ítems de OPEX fijo y variable (Mano de obra, Gastos de fábrica, Energía, Repuestos, Químicos, Diésel cargador y Cenizas).</p>
+                        <div class="p-3 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 rounded-xl space-y-1">
+                            <div class="font-bold text-amber-900 dark:text-amber-200">Sustitución en vivo:</div>
+                            <div>= Combustible ($${biomasaTissue_L8.toFixed(2)}) + OPEX Fijo ($${opexFijoBioTotal.toFixed(2)})</div>
+                            <div class="text-base font-extrabold text-amber-700 dark:text-amber-300 border-t pt-1 mt-1">
+                                = ${costoTotalVaporBioL16.toFixed(2)} US$/ton vapor
+                            </div>
+                        </div>
+                    `;
+                    break;
+
+                case 'impuesto_esc1_por_tonv':
+                    name = "Proporción Impuesto Verde por Tonelada";
+                    badge = "Fórmula Excel: ImpuestoAnual / (Generación * Horas)";
+                    html = `
+                        <p><strong>Descripción:</strong> Prorratea el monto del Impuesto Verde ($${impuestoVerdeEscenario1.toLocaleString('en-US')} USD/año) entre la generación de vapor anual (${vaporAnualTotal.toLocaleString('es-CL')} tonv/año).</p>
+                        <div class="p-3 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 rounded-xl space-y-1">
+                            <div class="font-bold text-amber-900 dark:text-amber-200">Sustitución en vivo:</div>
+                            <div>= $${impuestoVerdeEscenario1.toLocaleString('en-US')} USD/año / (${generacionVapor} tonv/h &times; ${horasOperacion} h/año)</div>
+                            <div class="text-base font-extrabold text-amber-700 dark:text-amber-300 border-t pt-1 mt-1">
+                                = ${impuestoEsc1_per_tonv.toFixed(2)} US$/ton vapor
+                            </div>
+                        </div>
+                    `;
+                    break;
+
+                case 'costo_total_esc1_bio_l17':
+                    name = "Costo Total Biomasa + Impuesto Verde";
+                    badge = "Fórmula Excel: CostoOperacional + ImpuestoProrrateado";
+                    html = `
+                        <p><strong>Descripción:</strong> KPI Final de comparación para la caldera a biomasa. Suma al costo operacional el impuesto verde prorrateado por tonelada.</p>
+                        <div class="p-3 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 rounded-xl space-y-1">
+                            <div class="font-bold text-amber-900 dark:text-amber-200">Sustitución en vivo:</div>
+                            <div>= Costo Operacional ($${costoTotalVaporBioL16.toFixed(2)}) + Impuesto Verde ($${impuestoEsc1_per_tonv.toFixed(2)})</div>
+                            <div class="text-base font-extrabold text-amber-700 dark:text-amber-300 border-t pt-1 mt-1">
+                                = ${costoTotalBiomasaEscenario1_L17.toFixed(2)} US$/ton vapor
+                            </div>
+                        </div>
+                    `;
+                    break;
+            }
+
+            titleElem.innerText = name;
+            badgeElem.innerText = badge;
+            bodyElem.innerHTML = html;
+            modal.classList.remove('hidden');
+        }
+
+        function closeFormulaModal() {
+            document.getElementById('formula-modal').classList.add('hidden');
+        }
+
+        function resetDefaults() {
+            try {
+                localStorage.removeItem(STORAGE_KEY);
+            } catch(e){}
+
+            document.getElementById('tasaCambio').value = 950;
+            document.getElementById('generacionVapor').value = 20;
+            document.getElementById('horasOperacion').value = 8640;
+            document.getElementById('tempAguaAlim').value = 110;
+
+            document.getElementById('entalpiaVapor').value = 670;
+            document.getElementById('tarifaGas').value = 8.20;
+            document.getElementById('eficiencia').value = 95;
+            document.getElementById('pciGas').value = 8300;
+            document.getElementById('densidadGas').value = 0.76;
+            document.getElementById('factorEmisionCO2').value = 2.75;
+            document.getElementById('tasaImpuestoVerde').value = 5.00;
+            document.getElementById('poblacionCoronel').value = 128000;
+            document.getElementById('manoObraGas').value = 0.00;
+            document.getElementById('gastosFabricaGas').value = 1.01;
+            document.getElementById('energiaGas').value = 1.00;
+            document.getElementById('repuestosGas').value = 0.50;
+            document.getElementById('quimicosGas').value = 0.26;
+            
+            document.getElementById('toggleManualM3').checked = false;
+            document.getElementById('inputConsumoGasM3').value = 71.0;
+
+            document.getElementById('precioBiomasaPesos').value = 8500;
+            document.getElementById('especificoBiomasa').value = 1.30;
+            document.getElementById('manoObraBio').value = 6.23;
+            document.getElementById('gastosFabricaBio').value = 3.91;
+            document.getElementById('energiaBio').value = 1.85;
+            document.getElementById('repuestosBio').value = 0.77;
+            document.getElementById('quimicosBio').value = 0.26;
+            document.getElementById('dieselCargadorBio').value = 0.36;
+            document.getElementById('disposicionCenizaBio').value = 0.27;
+            document.getElementById('impuestoVerdeEscenario1').value = 140000;
+            
+            calculate();
+        }
+
+        function copyPrompt() {
+            const text = document.getElementById('system-prompt-text').innerText;
+            navigator.clipboard.writeText(text).then(() => {
+                const btnLabel = document.getElementById('copy-btn-label');
+                btnLabel.innerText = "¡Copiado!";
+                setTimeout(() => { btnLabel.innerText = "Copiar System Prompt"; }, 2000);
+            });
+        }
+
+        function updateReportDate() {
+            const now = new Date();
+            const dd = String(now.getDate()).padStart(2, '0');
+            const mm = String(now.getMonth() + 1).padStart(2, '0');
+            const yyyy = now.getFullYear();
+            const dateElem = document.getElementById('report-date');
+            if (dateElem) {
+                dateElem.innerText = `${dd}-${mm}-${yyyy}`;
+            }
+        }
+
+        function printReport() {
+            updateReportDate();
+            window.print();
+        }
+
+        window.addEventListener('beforeprint', updateReportDate);
+
+        window.addEventListener('DOMContentLoaded', () => {
+            updateReportDate();
+            loadState();
+            calculate();
+        });
+    </script>
+</body>
+</html>
